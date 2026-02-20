@@ -1,3 +1,12 @@
+# ===========================================
+# File: backend/app/routers/dashboard.py
+#     /\
+#    / K2\
+#   /______\
+#  ~~~~~~~~~~
+#   8,611m
+# ===========================================
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 

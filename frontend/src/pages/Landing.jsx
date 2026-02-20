@@ -1,3 +1,12 @@
+/* ==========================================
+ * File: frontend/src/pages/Landing.jsx
+ *     /\
+ *    / K2\
+ *   /______\
+ *  ~~~~~~~~~~
+ *   8,611m
+ * ========================================== */
+
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login, signup } from '../api'

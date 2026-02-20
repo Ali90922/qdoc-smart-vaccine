@@ -1,3 +1,12 @@
+# ===========================================
+# File: backend/app/models.py
+#     /\
+#    / K2\
+#   /______\
+#  ~~~~~~~~~~
+#   8,611m
+# ===========================================
+
 from sqlalchemy import Column, Integer, String, Boolean, Date, Text, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from app.database import Base

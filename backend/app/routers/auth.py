@@ -1,3 +1,12 @@
+# ===========================================
+# File: backend/app/routers/auth.py
+#     /\
+#    / K2\
+#   /______\
+#  ~~~~~~~~~~
+#   8,611m
+# ===========================================
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext

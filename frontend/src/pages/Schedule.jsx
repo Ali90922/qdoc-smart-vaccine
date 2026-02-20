@@ -1,3 +1,12 @@
+/* ==========================================
+ * File: frontend/src/pages/Schedule.jsx
+ *     /\
+ *    / K2\
+ *   /______\
+ *  ~~~~~~~~~~
+ *   8,611m
+ * ========================================== */
+
 import { useState, useEffect } from 'react'
 import Navbar from '../components/Navbar'
 import { getSchedule } from '../api'

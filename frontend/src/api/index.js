@@ -1,3 +1,12 @@
+/* ==========================================
+ * File: frontend/src/api/index.js
+ *     /\
+ *    / K2\
+ *   /______\
+ *  ~~~~~~~~~~
+ *   8,611m
+ * ========================================== */
+
 import axios from 'axios'
 
 const api = axios.create({ baseURL: 'http://127.0.0.1:8000/api' })

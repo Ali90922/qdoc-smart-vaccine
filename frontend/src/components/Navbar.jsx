@@ -1,3 +1,12 @@
+/* ==========================================
+ * File: frontend/src/components/Navbar.jsx
+ *     /\
+ *    / K2\
+ *   /______\
+ *  ~~~~~~~~~~
+ *   8,611m
+ * ========================================== */
+
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import './Navbar.css'
 import qdocLogo from '../assets/qdoc-logo.png'

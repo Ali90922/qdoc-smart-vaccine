@@ -1,3 +1,12 @@
+# ===========================================
+# File: backend/app/dependencies.py
+#     /\
+#    / K2\
+#   /______\
+#  ~~~~~~~~~~
+#   8,611m
+# ===========================================
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session

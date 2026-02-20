@@ -1,3 +1,12 @@
+# ===========================================
+# File: backend/app/schemas.py
+#     /\
+#    / K2\
+#   /______\
+#  ~~~~~~~~~~
+#   8,611m
+# ===========================================
+
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List
 from datetime import date, datetime

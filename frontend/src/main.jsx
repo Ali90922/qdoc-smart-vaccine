@@ -1,3 +1,12 @@
+/* ==========================================
+ * File: frontend/src/main.jsx
+ *     /\
+ *    / K2\
+ *   /______\
+ *  ~~~~~~~~~~
+ *   8,611m
+ * ========================================== */
+
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'

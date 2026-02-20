@@ -1,3 +1,12 @@
+# ===========================================
+# File: backend/seed_vaccines.py
+#     /\
+#    / K2\
+#   /______\
+#  ~~~~~~~~~~
+#   8,611m
+# ===========================================
+
 """
 Run this once to seed the vaccines table from vaccine_rules.json:
     python seed_vaccines.py

@@ -1,3 +1,12 @@
+# ===========================================
+# File: backend/app/main.py
+#     /\
+#    / K2\
+#   /______\
+#  ~~~~~~~~~~
+#   8,611m
+# ===========================================
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
