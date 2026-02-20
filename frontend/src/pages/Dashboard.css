@@ -1,0 +1,133 @@
+.dashboard-page { min-height: 100vh; }
+
+.dashboard-container {
+  max-width: 1100px; margin: 0 auto;
+  padding: 40px 40px 80px;
+}
+
+.page-loading {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+  color: var(--text-dim);
+}
+
+.dash-header {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  margin-bottom: 36px;
+}
+.dash-welcome { font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
+.dash-name { font-family: var(--font-head); font-size: 32px; font-weight: 800; }
+.dash-date { font-size: 13px; color: var(--text-dim); }
+
+.summary-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 16px; margin-bottom: 28px;
+}
+.summary-card {
+  padding: 24px; border-radius: var(--radius-lg);
+  border: 1px solid; position: relative; overflow: hidden;
+}
+.summary-num {
+  font-family: var(--font-head); font-size: 48px; font-weight: 800;
+  line-height: 1;
+}
+.summary-label { font-size: 13px; font-weight: 600; margin-top: 4px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.05em; }
+.summary-icon { position: absolute; right: 20px; top: 20px; font-size: 28px; opacity: 0.2; }
+
+.overdue-card    { background: rgba(255,77,109,0.08);  border-color: rgba(255,77,109,0.2);  color: var(--danger); }
+.duesoon-card    { background: rgba(255,184,48,0.08);  border-color: rgba(255,184,48,0.2);  color: var(--warn); }
+.uptodate-card   { background: rgba(0,212,170,0.08);   border-color: rgba(0,212,170,0.2);   color: var(--success); }
+.noteligible-card{ background: rgba(122,143,168,0.08); border-color: rgba(122,143,168,0.2); color: var(--text-dim); }
+
+.filter-bar {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 20px;
+}
+.filter-label { font-size: 12px; color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 4px; }
+.filter-btn {
+  padding: 6px 14px; border-radius: 8px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text-dim); font-size: 13px; font-family: var(--font-body);
+  cursor: pointer; transition: all 0.2s;
+}
+.filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+.filter-btn.active { background: var(--accent); border-color: var(--accent); color: #0a0e17; font-weight: 600; }
+
+.vaccine-table { padding: 0; overflow: hidden; }
+
+.table-header {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1fr 1fr 0.7fr 1fr;
+  gap: 16px; padding: 14px 24px;
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1fr 1fr 0.7fr 1fr;
+  gap: 16px; padding: 16px 24px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.2s;
+  animation: fadeUp 0.4s ease forwards; opacity: 0;
+}
+.table-row:last-child { border-bottom: none; }
+.table-row:hover { background: rgba(255,255,255,0.02); }
+.table-row.overdue { border-left: 3px solid var(--danger); }
+.table-row.due_soon { border-left: 3px solid var(--warn); }
+
+.vaccine-name { display: flex; flex-direction: column; gap: 3px; }
+.vname { font-weight: 500; font-size: 14px; }
+.vreason { font-size: 12px; color: var(--text-dim); }
+
+.date-cell { font-size: 13px; color: var(--text-dim); display: flex; align-items: center; gap: 8px; }
+.days-tag {
+  padding: 2px 7px; border-radius: 5px; font-size: 11px; font-weight: 700;
+  background: rgba(255,184,48,0.15); color: var(--warn);
+}
+.dose-cell { font-size: 13px; color: var(--text-dim); }
+
+.table-empty {
+  padding: 48px; text-align: center; color: var(--text-dim); font-size: 14px;
+}
+
+.btn-remind {
+  padding: 7px 14px; font-size: 12px; font-weight: 600;
+  background: rgba(0,212,170,0.1); border: 1px solid rgba(0,212,170,0.25);
+  border-radius: 8px; color: var(--accent); cursor: pointer;
+  transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-remind:hover { background: rgba(0,212,170,0.2); }
+
+/* Reminder Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px); z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+.modal { width: 100%; max-width: 420px; animation: fadeUp 0.3s ease; }
+.modal-title { font-family: var(--font-head); font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.modal-sub { font-size: 14px; color: var(--text-dim); margin-bottom: 24px; }
+.modal-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.remind-opt {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; border-radius: var(--radius);
+  background: var(--bg3); border: 1px solid var(--border);
+  cursor: pointer; text-align: left; transition: all 0.2s; width: 100%;
+}
+.remind-opt:hover { border-color: var(--accent); background: rgba(0,212,170,0.05); }
+.remind-icon { font-size: 22px; }
+.remind-label { font-weight: 600; font-size: 14px; color: var(--text); }
+.remind-desc { font-size: 12px; color: var(--text-dim); margin-top: 1px; }
+.remind-opt > div, .remind-opt > span:not(.remind-icon) { display: flex; flex-direction: column; }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 12px 24px; border-radius: 100px; font-size: 14px;
+  box-shadow: var(--shadow); z-index: 300; white-space: nowrap;
+}
