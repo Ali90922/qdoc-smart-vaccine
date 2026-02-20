@@ -79,7 +79,13 @@ def _get_patient_flags(patient) -> dict:
     flags = [
         "is_pregnant", "is_immunocompromised", "has_diabetes",
         "has_chronic_lung", "has_heart_disease", "has_chronic_kidney",
-        "has_chronic_liver", "has_asplenia", "has_hiv"
+        "has_chronic_liver", "has_asplenia", "has_hiv",
+        "resides_in_pch", "is_pch_respite",
+        "is_panelled_for_pch_in_transitional_care", "is_panelled_for_pch_in_chronic_care",
+        "has_homelessness", "uses_illicit_drugs", "has_cochlear_implant",
+        "has_hemoglobinopathy", "on_immunosuppressive_therapy", "is_on_dialysis",
+        "is_incarcerated", "is_msm", "is_healthcare_worker", "is_student",
+        "is_traveling_to_measles_endemic_country", "is_measles_outbreak_exposed"
     ]
     return {f: bool(getattr(patient, f, False)) for f in flags}
 
@@ -129,7 +135,22 @@ def _is_eligible(rule: dict, age_months: int, birth_year: int, flags: dict) -> t
             label = condition.replace("_", " ").replace("is ", "").replace("has ", "")
             return False, f"Contraindicated due to: {label}"
 
-    # 5. Risk factor requirement — vaccine ONLY for patients with these conditions
+    # 5. MMR special cohort logic (Manitoba)
+    if rule.get("id") == "mmr":
+        if age_months < 6:
+            return False, "Patient is too young (minimum age: 0.5 years)"
+        if age_months < 12:
+            if flags.get("is_traveling_to_measles_endemic_country") or flags.get("is_measles_outbreak_exposed"):
+                return True, "Eligible due to infant travel/outbreak criteria"
+            return False, "Infants 6-11 months are only eligible for travel/outbreak criteria"
+        if birth_year < 1970 and not (flags.get("is_healthcare_worker") or flags.get("is_student")):
+            return False, "Adults born before 1970 are generally considered immune"
+
+    # 6. Pneu-C-20 special rule: age 65+ pathway regardless of listed risk factors
+    if rule.get("id") == "pneu_c_20" and rule.get("eligible_at_65_plus") and age_months >= 780:
+        return True, "Eligible at age 65+"
+
+    # 7. Risk factor requirement — vaccine ONLY for patients with these conditions
     required_factors = rule.get("risk_factors_required", [])
     if required_factors:
         has_any = any(flags.get(f, False) for f in required_factors)
@@ -137,7 +158,7 @@ def _is_eligible(rule: dict, age_months: int, birth_year: int, flags: dict) -> t
             labels = [f.replace("has_", "").replace("is_", "").replace("_", " ") for f in required_factors]
             return False, f"Only eligible with: {', '.join(labels)}"
 
-    # 6. Risk factor override — makes patient eligible regardless of age restriction
+    # 8. Risk factor override — makes patient eligible regardless of age restriction
     overrides = rule.get("risk_factor_overrides", [])
     override_min_age = rule.get("risk_override_min_age_months", 0)
     if overrides:
@@ -145,11 +166,63 @@ def _is_eligible(rule: dict, age_months: int, birth_year: int, flags: dict) -> t
         if has_override and age_months >= override_min_age:
             return True, "Eligible due to high-risk medical condition"
 
-    # 7. Pneu-C-20 special rule: also eligible at 65+ regardless of risk factors
-    if rule.get("eligible_at_65_plus") and age_months >= 780:
-        return True, "Eligible at age 65+"
-
     return True, "Eligible"
+
+
+def _age_in_months_on(dob: date, on_date: date) -> int:
+    months = (on_date.year - dob.year) * 12 + (on_date.month - dob.month)
+    if on_date.day < dob.day:
+        months -= 1
+    return max(months, 0)
+
+
+def _required_doses_for_rule(rule: dict, age_months: int, birth_year: int, flags: dict, patient, records_for_vaccine: list) -> int:
+    vaccine_key = rule.get("id")
+    doses_req = rule.get("doses_required", 1)
+
+    if vaccine_key == "pneu_c_15":
+        if age_months >= 24:
+            return 1
+        return 3
+
+    if vaccine_key == "pneu_c_20":
+        if age_months < 24:
+            return 4
+        if age_months < 216:
+            return 1
+        return 1
+
+    if vaccine_key == "hpv":
+        # Manitoba schedule: 2 doses when initiated before 15; otherwise 3 doses.
+        if age_months < 180:
+            return 2
+        if records_for_vaccine:
+            first_dose_age = _age_in_months_on(patient.dob, records_for_vaccine[0].date_given)
+            if first_dose_age < 180:
+                return 2
+        return 3
+
+    if vaccine_key == "hepatitis_b":
+        high_risk = any(
+            flags.get(flag, False)
+            for flag in rule.get("risk_factor_overrides", [])
+        )
+        return 3 if high_risk else 2
+
+    if vaccine_key == "mmr":
+        if age_months < 12:
+            return 1
+        if flags.get("is_healthcare_worker"):
+            return 2
+        if flags.get("is_student"):
+            return 1 if birth_year < 1970 else 2
+        if birth_year >= 1985:
+            return 2
+        if birth_year >= 1970:
+            return 1
+        return 0
+
+    return doses_req
 
 
 # ── Main Evaluation Function ──────────────────────────────────────────────────
@@ -183,15 +256,20 @@ def evaluate_patient(patient, records: list) -> list:
     for rule in VACCINE_RULES:
         vaccine_key  = rule["id"]
         vaccine_name = rule["name"]
-        doses_req    = rule.get("doses_required", 1)
 
         # Get this patient's records for this vaccine (handles missing records gracefully)
         vax_records     = _get_records_for_vaccine(records or [], vaccine_key)
         doses_received  = len(vax_records)
         last_dose_date  = vax_records[-1].date_given if vax_records else None
+        doses_req = _required_doses_for_rule(rule, age_months, birth_year, flags, patient, vax_records)
 
         # ── Step 1: Eligibility check ─────────────────────────────────────────
         eligible, reason = _is_eligible(rule, age_months, birth_year, flags)
+
+        # Rotavirus Manitoba nuance: do not start series after 15 weeks.
+        if vaccine_key == "rotavirus" and doses_received == 0 and age_months >= 4:
+            eligible = False
+            reason = "Too old to start Rotavirus series (must begin before 15 weeks)"
 
         if not eligible:
             results.append({

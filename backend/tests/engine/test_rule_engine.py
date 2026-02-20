@@ -38,6 +38,22 @@ class StubPatient:
     has_chronic_liver: bool = False
     has_asplenia: bool = False
     has_hiv: bool = False
+    resides_in_pch: bool = False
+    is_pch_respite: bool = False
+    is_panelled_for_pch_in_transitional_care: bool = False
+    is_panelled_for_pch_in_chronic_care: bool = False
+    has_homelessness: bool = False
+    uses_illicit_drugs: bool = False
+    has_cochlear_implant: bool = False
+    has_hemoglobinopathy: bool = False
+    on_immunosuppressive_therapy: bool = False
+    is_on_dialysis: bool = False
+    is_incarcerated: bool = False
+    is_msm: bool = False
+    is_healthcare_worker: bool = False
+    is_student: bool = False
+    is_traveling_to_measles_endemic_country: bool = False
+    is_measles_outbreak_exposed: bool = False
 
 
 def _status(results, vaccine_key):
@@ -228,15 +244,23 @@ def test_pneu_c_20_eligible_with_risk_override_at_adult_age():
 
 
 def test_pneu_c_20_not_eligible_when_under_min_age_even_with_risk():
-    # Under 18 years old should still fail min-age gate.
+    # Under 2 years old should fail minimum age gate even with risk.
     patient = StubPatient(
-        dob=date.today() - timedelta(days=365 * 17),
+        dob=date.today() - timedelta(days=365 * 1),
         has_diabetes=True,
     )
     results = evaluate_patient(patient, [])
     pneu = _status(results, "pneu_c_20")
     assert pneu["status"] == "NOT_ELIGIBLE"
     assert "too young" in (pneu["reason"] or "").lower()
+
+
+def test_pneu_c_20_not_eligible_for_healthy_age_30():
+    patient = StubPatient(dob=date.today() - timedelta(days=365 * 30))
+    results = evaluate_patient(patient, [])
+    pneu = _status(results, "pneu_c_20")
+    assert pneu["status"] == "NOT_ELIGIBLE"
+    assert "only eligible with" in (pneu["reason"] or "").lower()
 
 
 def test_multi_dose_series_becomes_up_to_date_after_required_doses():
@@ -291,6 +315,90 @@ def test_partial_multi_dose_series_due_soon_before_interval():
     mmr = _status(results, "mmr")
     assert mmr["status"] == "DUE_SOON"
     assert mmr["days_until"] == 18
+
+
+def test_mmr_not_eligible_for_adult_born_before_1970_without_exception():
+    patient = StubPatient(dob=date(1960, 5, 1))
+    results = evaluate_patient(patient, [])
+    mmr = _status(results, "mmr")
+    assert mmr["status"] == "NOT_ELIGIBLE"
+    assert "considered immune" in (mmr["reason"] or "").lower()
+
+
+def test_mmr_eligible_for_adult_born_before_1970_if_healthcare_worker():
+    patient = StubPatient(dob=date(1960, 5, 1), is_healthcare_worker=True)
+    results = evaluate_patient(patient, [])
+    mmr = _status(results, "mmr")
+    assert mmr["status"] == "OVERDUE"
+    assert mmr["doses_required"] == 2
+
+
+def test_mmr_eligible_for_infant_6_to_11_months_only_with_travel_or_outbreak():
+    patient = StubPatient(
+        dob=_months_ago(8),
+        is_traveling_to_measles_endemic_country=True,
+    )
+    results = evaluate_patient(patient, [])
+    mmr = _status(results, "mmr")
+    assert mmr["status"] == "OVERDUE"
+    assert mmr["doses_required"] == 1
+
+
+def test_mmr_not_eligible_for_infant_6_to_11_months_without_travel_or_outbreak():
+    patient = StubPatient(dob=_months_ago(8))
+    results = evaluate_patient(patient, [])
+    mmr = _status(results, "mmr")
+    assert mmr["status"] == "NOT_ELIGIBLE"
+    assert "travel/outbreak" in (mmr["reason"] or "").lower()
+
+
+def test_hpv_requires_3_doses_when_starting_at_15_or_older():
+    patient = StubPatient(dob=date.today() - timedelta(days=365 * 20))
+    results = evaluate_patient(patient, [])
+    hpv = _status(results, "hpv")
+    assert hpv["doses_required"] == 3
+
+
+def test_hpv_requires_2_doses_when_patient_under_15():
+    patient = StubPatient(dob=date.today() - timedelta(days=365 * 13))
+    results = evaluate_patient(patient, [])
+    hpv = _status(results, "hpv")
+    assert hpv["doses_required"] == 2
+
+
+def test_hpv_stays_2_doses_if_initiated_before_15():
+    patient = StubPatient(dob=date.today() - timedelta(days=365 * 16))
+    first_dose = date.today() - timedelta(days=365 * 2)
+    records = [StubRecord(vaccine=StubVaccine(vaccine_key="hpv"), dose_number=1, date_given=first_dose)]
+    results = evaluate_patient(patient, records)
+    hpv = _status(results, "hpv")
+    assert hpv["doses_required"] == 2
+
+
+def test_rotavirus_not_eligible_if_unstarted_after_start_window():
+    patient = StubPatient(dob=_months_ago(5))
+    results = evaluate_patient(patient, [])
+    rota = _status(results, "rotavirus")
+    assert rota["status"] == "NOT_ELIGIBLE"
+    assert "too old to start" in (rota["reason"] or "").lower()
+
+
+def test_rsv_not_eligible_for_age_60_without_care_setting():
+    patient = StubPatient(dob=date.today() - timedelta(days=365 * 65))
+    results = evaluate_patient(patient, [])
+    rsv = _status(results, "rsv")
+    assert rsv["status"] == "NOT_ELIGIBLE"
+    assert "only eligible with" in (rsv["reason"] or "").lower()
+
+
+def test_rsv_eligible_for_age_60_with_pch_residence():
+    patient = StubPatient(
+        dob=date.today() - timedelta(days=365 * 65),
+        resides_in_pch=True,
+    )
+    results = evaluate_patient(patient, [])
+    rsv = _status(results, "rsv")
+    assert rsv["status"] == "OVERDUE"
 
 
 def test_partial_multi_dose_without_interval_defaults_to_overdue():
