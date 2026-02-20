@@ -1,27 +1,39 @@
-# QDoc — Smart Vaccine Eligibility & Reminder System
+# QDoc Vaccine Portal
 
-## Project Structure
+Rule-based vaccine eligibility + reminder system with a FastAPI backend and React frontend.
 
+## Repository Layout
+
+```text
+qdoc-smart-vaccine/
+├── backend/
+│   ├── app/                  # API, models, schemas, rule engine
+│   ├── tests/                # Organized backend test suites
+│   │   ├── engine/
+│   │   └── schemas/
+│   ├── requirements.txt
+│   └── seed_vaccines.py
+├── frontend/
+│   ├── public/               # Static assets (favicon/logo)
+│   ├── src/
+│   │   ├── api/
+│   │   ├── assets/
+│   │   ├── components/
+│   │   └── pages/
+│   ├── package.json
+│   └── vite.config.js
+└── .gitignore
 ```
-qdoc/
-├── backend/        # FastAPI + PostgreSQL
-└── frontend/       # React + Vite
-```
-
----
 
 ## Prerequisites
 
-Make sure you have these installed:
 - Python 3.11+
 - Node.js 18+
-- PostgreSQL 15 (running)
+- PostgreSQL 15+
 
----
+## Quick Start
 
-## Step 1 — PostgreSQL Setup
-
-Make sure PostgreSQL is running, then create the database:
+### 1) Database
 
 ```bash
 psql postgres
@@ -32,101 +44,59 @@ CREATE DATABASE qdoc;
 \q
 ```
 
----
-
-## Step 2 — Backend Setup
+### 2) Backend
 
 ```bash
-cd qdoc/backend
-```
-
-### Install dependencies
-```bash
+cd backend
 pip install -r requirements.txt
-```
-
-### Configure environment
-Edit the `.env` file and set your Mac username:
-```
-DATABASE_URL=postgresql://YOUR_MAC_USERNAME@localhost:5432/qdoc
-JWT_SECRET=supersecretkey123
-JWT_EXPIRE_MINUTES=60
-```
-> Run `whoami` in terminal to get your Mac username.
-
-### Seed the vaccines table
-```bash
 python seed_vaccines.py
-```
-You should see:
-```
-Seeding complete: 15 inserted, 0 already existed.
-```
-
-### Start the backend server
-```bash
 uvicorn app.main:app --reload
 ```
-Backend runs at: **http://127.0.0.1:8000**
-API docs at: **http://127.0.0.1:8000/docs**
 
----
+Backend:
+- API: [http://127.0.0.1:8000](http://127.0.0.1:8000)
+- Docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-## Step 3 — Frontend Setup
-
-Open a **new terminal tab**, then:
+### 3) Frontend
 
 ```bash
-cd qdoc/frontend
-```
-
-### Install dependencies
-```bash
+cd frontend
 npm install
-```
-
-### Start the frontend
-```bash
 npm run dev
 ```
-Frontend runs at: **http://localhost:5173**
 
----
+Frontend:
+- App: [http://localhost:5173](http://localhost:5173)
 
-## Running the Full App
+## Testing
 
-You need **two terminals open at the same time**:
+Backend test suites:
 
-| Terminal 1 (Backend) | Terminal 2 (Frontend) |
-|---|---|
-| `cd qdoc/backend` | `cd qdoc/frontend` |
-| `uvicorn app.main:app --reload` | `npm run dev` |
+```bash
+cd backend
+pytest -q
+```
 
-Then open **http://localhost:5173** in your browser.
+Current organized coverage includes:
+- `backend/tests/engine/` for rule-engine behavior
+- `backend/tests/schemas/` for input/validation behavior
 
----
-
-## How to Use
-
-1. Go to `http://localhost:5173`
-2. Click **Create Account** and sign up
-3. You'll be redirected to **Profile Creation** — fill in your info
-4. After saving, you'll land on the **Dashboard** showing your vaccine statuses
-5. Click **Schedule** in the navbar to see upcoming vaccines
-6. Click **Remind Me** on any overdue/due-soon vaccine to log a reminder
-
----
-
-## API Endpoints Quick Reference
+## API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
 | POST | `/api/auth/signup` | Create account |
 | POST | `/api/auth/login` | Login |
 | POST | `/api/profile` | Create patient profile |
-| GET | `/api/profile/me` | Get your profile |
-| GET | `/api/dashboard/me` | Get vaccine statuses |
-| GET | `/api/schedule/me` | Get upcoming schedule |
-| POST | `/api/reminders/send` | Log a reminder |
+| GET | `/api/profile/me` | Get profile |
+| PUT | `/api/profile/me` | Update profile |
+| GET | `/api/dashboard/me` | Vaccine statuses + summary |
+| GET | `/api/schedule/me` | Upcoming schedule |
+| POST | `/api/reminders/send` | Reminder simulation |
+| GET | `/api/reminders/me` | Reminder history |
 
-Full interactive docs: **http://127.0.0.1:8000/docs**
+## Notes
+
+- Generated artifacts (`node_modules`, `dist`, `__pycache__`, local `.env`) are ignored by `.gitignore`.
+- See `backend/README.md` and `frontend/README.md` for service-specific details.
+
