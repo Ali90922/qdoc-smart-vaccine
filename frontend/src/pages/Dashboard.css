@@ -175,21 +175,25 @@
   background: transparent;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  width: fit-content;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
   cursor: pointer;
+  text-align: left;
 }
 
 .vname-info {
-  font-size: 13px;
+  font-size: 18px;
+  font-weight: 700;
   color: #6f8598;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .table-row-expanded {
   border-bottom: 1px solid var(--qdoc-border);
   background: #f8fbfe;
-  padding: 0 20px 14px;
+  padding: 12px 20px 14px;
 }
 
 .expanded-grid {
