@@ -10,6 +10,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import './Navbar.css'
 import qdocLogo from '../assets/qdoc-logo.png'
+import TopStrip from './TopStrip'
 
 export default function Navbar() {
   const navigate  = useNavigate()
@@ -22,16 +23,19 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="navbar">
-      <Link to="/dashboard" className="navbar-brand">
-        <img src={qdocLogo} alt="QDoc" className="navbar-logo" />
-        <span className="navbar-brand-text">Vaccine Portal</span>
-      </Link>
-      <div className="navbar-links">
-        <Link to="/dashboard" className={`nav-link ${active('/dashboard')}`}>Dashboard</Link>
-        <Link to="/schedule"  className={`nav-link ${active('/schedule')}`}>Schedule</Link>
-      </div>
-      <button className="btn btn-outline btn-sm" onClick={logout}>Sign Out</button>
-    </nav>
+    <header className="header-shell">
+      <TopStrip />
+      <nav className="navbar">
+        <Link to="/dashboard" className="navbar-brand">
+          <img src={qdocLogo} alt="QDoc" className="navbar-logo" />
+          <span className="navbar-brand-text">Vaccine Portal</span>
+        </Link>
+        <div className="navbar-links">
+          <Link to="/dashboard" className={`nav-link ${active('/dashboard')}`}>Dashboard</Link>
+          <Link to="/schedule"  className={`nav-link ${active('/schedule')}`}>Schedule</Link>
+        </div>
+        <button className="btn btn-outline btn-sm" onClick={logout}>Sign Out</button>
+      </nav>
+    </header>
   )
 }

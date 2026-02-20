@@ -1,0 +1,93 @@
+/* ==========================================
+ * File: frontend/src/components/TopStrip.css
+ *     /\
+ *    / K2\
+ *   /______\
+ *  ~~~~~~~~~~
+ *   8,611m
+ * ========================================== */
+
+.qdoc-top-strip {
+  background: #1d3e59;
+  color: #fff;
+  border-bottom: 4px solid #fff;
+}
+
+.qdoc-top-strip-inner {
+  max-width: 1300px;
+  margin: 0 auto;
+  min-height: 42px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.qdoc-contact-links,
+.qdoc-social-links {
+  display: flex;
+  align-items: center;
+}
+
+.qdoc-contact-links {
+  gap: 22px;
+}
+
+.qdoc-social-links {
+  gap: 12px;
+}
+
+.qdoc-top-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.qdoc-social-link {
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.qdoc-top-link:hover,
+.qdoc-social-link:hover {
+  color: #cfe6f9;
+}
+
+.top-icon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+@media (max-width: 960px) {
+  .qdoc-top-strip-inner {
+    min-height: 50px;
+    padding: 8px 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .qdoc-contact-links {
+    gap: 12px;
+  }
+
+  .qdoc-top-link {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 680px) {
+  .qdoc-top-strip {
+    display: none;
+  }
+}
+
