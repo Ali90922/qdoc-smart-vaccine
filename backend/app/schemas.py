@@ -7,7 +7,7 @@
 #   8,611m
 # ===========================================
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, field_validator, model_validator
 from typing import Optional, List
 from datetime import date, datetime
 
@@ -34,6 +34,14 @@ class VaccinationRecordInput(BaseModel):
     vaccine_key: str
     dose_number: int
     date_given: date
+
+    @field_validator("vaccine_key")
+    @classmethod
+    def vaccine_key_normalized(cls, v):
+        key = v.strip().lower()
+        if not key:
+            raise ValueError("vaccine_key cannot be empty.")
+        return key
 
     @field_validator("date_given")
     @classmethod
@@ -95,6 +103,37 @@ class ProfileCreateRequest(BaseModel):
         if not v.strip():
             raise ValueError("Name cannot be empty.")
         return v.strip()
+
+    @model_validator(mode="after")
+    def vaccination_history_consistency(self):
+        history = self.vaccination_history or []
+        if not history:
+            return self
+
+        seen = set()
+        by_vaccine = {}
+        for record in history:
+            key = (record.vaccine_key, record.dose_number)
+            if key in seen:
+                raise ValueError(
+                    f"Duplicate vaccination history entry for '{record.vaccine_key}' dose {record.dose_number}."
+                )
+            seen.add(key)
+            by_vaccine.setdefault(record.vaccine_key, []).append(record)
+
+        # Higher dose numbers cannot have older dates than lower doses for same vaccine
+        for vaccine_key, records in by_vaccine.items():
+            ordered = sorted(records, key=lambda r: r.dose_number)
+            for idx in range(1, len(ordered)):
+                prev = ordered[idx - 1]
+                curr = ordered[idx]
+                if curr.date_given < prev.date_given:
+                    raise ValueError(
+                        f"Inconsistent dose chronology for '{vaccine_key}': "
+                        f"dose {curr.dose_number} date is earlier than dose {prev.dose_number}."
+                    )
+
+        return self
 
 
 class ProfileUpdateRequest(BaseModel):

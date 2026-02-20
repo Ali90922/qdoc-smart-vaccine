@@ -1,0 +1,23 @@
+# macOS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Backend local secrets
+backend/.env
+
+# Node / frontend build outputs
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Logs
+*.log
