@@ -13,6 +13,20 @@
   position: relative;
 }
 
+.profile-view-page {
+  min-height: 100vh;
+}
+
+.page-loading {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #678094;
+}
+
 .profile-bg {
   position: fixed;
   inset: 0;
@@ -27,6 +41,10 @@
   margin: 0 auto;
   position: relative;
   z-index: 1;
+}
+
+.profile-view-container {
+  padding: 36px 24px 72px;
 }
 
 .profile-header { margin-bottom: 34px; }
@@ -100,6 +118,68 @@
 }
 
 .profile-card { animation: fadeUp 0.4s ease; }
+.profile-view-card { margin-bottom: 16px; }
+
+.profile-view-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 24px;
+}
+
+.profile-view-label {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6d8499;
+  margin-bottom: 6px;
+}
+
+.profile-view-grid p {
+  color: var(--qdoc-blue-deep);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.profile-history-card {
+  padding: 18px;
+}
+
+.profile-history-table {
+  border: 1px solid var(--qdoc-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.profile-history-head,
+.profile-history-row {
+  display: grid;
+  grid-template-columns: 2fr 0.8fr 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+}
+
+.profile-history-head {
+  background: #f3f8fd;
+  color: #5d768b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid var(--qdoc-border);
+}
+
+.profile-history-row {
+  font-size: 14px;
+  color: var(--qdoc-text);
+  border-bottom: 1px solid #e3edf6;
+}
+
+.profile-history-row:last-child {
+  border-bottom: none;
+}
 
 .step-title {
   font-size: 21px;
@@ -207,8 +287,10 @@
 
 @media (max-width: 700px) {
   .profile-page { padding: 30px 14px; }
+  .profile-view-container { padding: 24px 14px 42px; }
 
   .form-grid { grid-template-columns: 1fr; }
+  .profile-view-grid { grid-template-columns: 1fr; }
 
   .risk-grid { grid-template-columns: 1fr; }
 
@@ -228,4 +310,10 @@
   }
 
   .step-actions .btn { width: 100%; }
+
+  .profile-history-head,
+  .profile-history-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
 }

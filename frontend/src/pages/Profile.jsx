@@ -7,9 +7,10 @@
  *   8,611m
  * ========================================== */
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { createProfile } from '../api'
+import Navbar from '../components/Navbar'
+import { createProfile, getProfile } from '../api'
 import './Profile.css'
 
 const VACCINES = [
@@ -42,8 +43,16 @@ const RISK_FACTORS = [
   { key: 'has_hiv',              label: 'HIV Positive' },
 ]
 
+function fmtDate(d) {
+  if (!d) return '—'
+  return new Date(d).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
 export default function Profile() {
   const navigate = useNavigate()
+
+  const [existingProfile, setExistingProfile] = useState(null)
+  const [loadingProfile, setLoadingProfile] = useState(true)
 
   const [form, setForm] = useState({
     name: '', dob: '', gender: '',
@@ -55,20 +64,43 @@ export default function Profile() {
 
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState('')
-  const [step, setStep]       = useState(1)   // 1=personal, 2=risk, 3=history
+  const [error, setError] = useState('')
+  const [step, setStep] = useState(1)
 
-  const set = (key, val) => setForm(f => ({ ...f, [key]: val }))
+  useEffect(() => {
+    getProfile()
+      .then((r) => setExistingProfile(r.data))
+      .catch((err) => {
+        if (err.response?.status !== 404) {
+          setError('Failed to load profile.')
+        }
+      })
+      .finally(() => setLoadingProfile(false))
+  }, [])
 
-  const addRow = () => setHistory(h => [...h, { vaccine_key: '', dose_number: 1, date_given: '' }])
-  const removeRow = (i) => setHistory(h => h.filter((_, idx) => idx !== i))
-  const updateRow = (i, key, val) => setHistory(h => h.map((r, idx) => idx === i ? { ...r, [key]: val } : r))
+  const selectedRisks = useMemo(() => {
+    if (!existingProfile) return []
+    return RISK_FACTORS.filter((rf) => existingProfile[rf.key]).map((rf) => rf.label)
+  }, [existingProfile])
+
+  const sortedHistory = useMemo(() => {
+    if (!existingProfile?.vaccination_history) return []
+    return [...existingProfile.vaccination_history].sort(
+      (a, b) => new Date(b.date_given) - new Date(a.date_given)
+    )
+  }, [existingProfile])
+
+  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }))
+
+  const addRow = () => setHistory((h) => [...h, { vaccine_key: '', dose_number: 1, date_given: '' }])
+  const removeRow = (i) => setHistory((h) => h.filter((_, idx) => idx !== i))
+  const updateRow = (i, key, val) => setHistory((h) => h.map((r, idx) => (idx === i ? { ...r, [key]: val } : r)))
 
   const submit = async () => {
     setError('')
     setLoading(true)
     try {
-      const validHistory = history.filter(r => r.vaccine_key && r.date_given)
+      const validHistory = history.filter((r) => r.vaccine_key && r.date_given)
       await createProfile({ ...form, vaccination_history: validHistory })
       navigate('/dashboard')
     } catch (err) {
@@ -77,6 +109,73 @@ export default function Profile() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (loadingProfile) {
+    return (
+      <div className="page-loading">
+        <div className="spinner" style={{ width: 36, height: 36, borderWidth: 3 }} />
+        <p>Loading profile...</p>
+      </div>
+    )
+  }
+
+  if (existingProfile) {
+    return (
+      <div className="profile-view-page">
+        <Navbar />
+        <div className="profile-container profile-view-container">
+          <div className="profile-header fade-up">
+            <div className="profile-step-label">Patient Information</div>
+            <h1>My Profile</h1>
+            <p>Here is the information you already added.</p>
+          </div>
+
+          <div className="card profile-view-card fade-up">
+            <div className="profile-view-grid">
+              <div>
+                <span className="profile-view-label">Full Name</span>
+                <p>{existingProfile.name}</p>
+              </div>
+              <div>
+                <span className="profile-view-label">Date of Birth</span>
+                <p>{fmtDate(existingProfile.dob)}</p>
+              </div>
+              <div>
+                <span className="profile-view-label">Gender</span>
+                <p>{existingProfile.gender || 'Not provided'}</p>
+              </div>
+              <div>
+                <span className="profile-view-label">Risk Factors</span>
+                <p>{selectedRisks.length ? selectedRisks.join(', ') : 'None selected'}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="card profile-history-card fade-up">
+            <h2 className="step-title" style={{ marginBottom: 12 }}>Vaccination History</h2>
+            {sortedHistory.length === 0 ? (
+              <div className="empty-history">No vaccination records found.</div>
+            ) : (
+              <div className="profile-history-table">
+                <div className="profile-history-head">
+                  <span>Vaccine</span>
+                  <span>Dose</span>
+                  <span>Date Given</span>
+                </div>
+                {sortedHistory.map((row) => (
+                  <div key={row.id} className="profile-history-row">
+                    <span>{row.vaccine_name}</span>
+                    <span>#{row.dose_number}</span>
+                    <span>{fmtDate(row.date_given)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -93,31 +192,30 @@ export default function Profile() {
         {/* Step indicators */}
         <div className="step-bar fade-up">
           {['Personal Info', 'Risk Factors', 'Vaccine History'].map((s, i) => (
-            <div key={i} className={`step-item ${step === i+1 ? 'active' : ''} ${step > i+1 ? 'done' : ''}`}>
-              <div className="step-circle">{step > i+1 ? '✓' : i+1}</div>
+            <div key={i} className={`step-item ${step === i + 1 ? 'active' : ''} ${step > i + 1 ? 'done' : ''}`}>
+              <div className="step-circle">{step > i + 1 ? '✓' : i + 1}</div>
               <span>{s}</span>
             </div>
           ))}
         </div>
 
         <div className="card profile-card fade-up">
-
           {/* STEP 1 — Personal Info */}
           {step === 1 && (
             <div className="step-content">
               <h2 className="step-title">Personal Information</h2>
               <div className="form-grid">
-                <div className="form-group" style={{gridColumn: '1/-1'}}>
+                <div className="form-group" style={{ gridColumn: '1/-1' }}>
                   <label>Full Name *</label>
-                  <input placeholder="John Smith" value={form.name} onChange={e => set('name', e.target.value)} required />
+                  <input placeholder="John Smith" value={form.name} onChange={(e) => set('name', e.target.value)} required />
                 </div>
                 <div className="form-group">
                   <label>Date of Birth *</label>
-                  <input type="date" value={form.dob} onChange={e => set('dob', e.target.value)} max={new Date().toISOString().split('T')[0]} required />
+                  <input type="date" value={form.dob} onChange={(e) => set('dob', e.target.value)} max={new Date().toISOString().split('T')[0]} required />
                 </div>
                 <div className="form-group">
                   <label>Gender</label>
-                  <select value={form.gender} onChange={e => set('gender', e.target.value)}>
+                  <select value={form.gender} onChange={(e) => set('gender', e.target.value)}>
                     <option value="">Select...</option>
                     <option value="male">Male</option>
                     <option value="female">Female</option>
@@ -126,9 +224,7 @@ export default function Profile() {
                 </div>
               </div>
               <div className="step-actions">
-                <button className="btn btn-primary"
-                  onClick={() => setStep(2)}
-                  disabled={!form.name || !form.dob}>
+                <button className="btn btn-primary" onClick={() => setStep(2)} disabled={!form.name || !form.dob}>
                   Next: Risk Factors →
                 </button>
               </div>
@@ -141,13 +237,9 @@ export default function Profile() {
               <h2 className="step-title">Medical History & Risk Factors</h2>
               <p className="step-desc">Check all conditions that apply. This helps determine which vaccines you're eligible for.</p>
               <div className="risk-grid">
-                {RISK_FACTORS.map(rf => (
+                {RISK_FACTORS.map((rf) => (
                   <label key={rf.key} className={`risk-item ${form[rf.key] ? 'checked' : ''}`}>
-                    <input
-                      type="checkbox"
-                      checked={form[rf.key]}
-                      onChange={e => set(rf.key, e.target.checked)}
-                    />
+                    <input type="checkbox" checked={form[rf.key]} onChange={(e) => set(rf.key, e.target.checked)} />
                     <span className="risk-check">{form[rf.key] ? '✓' : ''}</span>
                     {rf.label}
                   </label>
@@ -164,32 +256,37 @@ export default function Profile() {
           {step === 3 && (
             <div className="step-content">
               <h2 className="step-title">Vaccination History</h2>
-              <p className="step-desc">Add any vaccines you've already received. Leave blank if you have no records — we'll mark everything as overdue.</p>
+              <p className="step-desc">Add vaccines already received. Leave blank if none.</p>
 
-              {history.length === 0 && (
-                <div className="empty-history">
-                  No vaccination records added yet.
-                </div>
-              )}
+              {history.length === 0 && <div className="empty-history">No vaccination records added yet.</div>}
 
               {history.map((row, i) => (
                 <div key={i} className="history-row">
                   <div className="form-group">
                     <label>Vaccine</label>
-                    <select value={row.vaccine_key} onChange={e => updateRow(i, 'vaccine_key', e.target.value)}>
+                    <select value={row.vaccine_key} onChange={(e) => updateRow(i, 'vaccine_key', e.target.value)}>
                       <option value="">Select vaccine...</option>
-                      {VACCINES.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                      {VACCINES.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
                     </select>
                   </div>
                   <div className="form-group">
                     <label>Dose #</label>
-                    <input type="number" min="1" max="4" value={row.dose_number}
-                      onChange={e => updateRow(i, 'dose_number', parseInt(e.target.value))} />
+                    <input
+                      type="number"
+                      min="1"
+                      max="4"
+                      value={row.dose_number}
+                      onChange={(e) => updateRow(i, 'dose_number', parseInt(e.target.value || '1', 10))}
+                    />
                   </div>
                   <div className="form-group">
                     <label>Date Given</label>
-                    <input type="date" value={row.date_given} max={new Date().toISOString().split('T')[0]}
-                      onChange={e => updateRow(i, 'date_given', e.target.value)} />
+                    <input
+                      type="date"
+                      value={row.date_given}
+                      max={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => updateRow(i, 'date_given', e.target.value)}
+                    />
                   </div>
                   <button className="btn btn-danger remove-btn" onClick={() => removeRow(i)}>✕</button>
                 </div>
@@ -197,7 +294,7 @@ export default function Profile() {
 
               <button className="btn btn-outline add-btn" onClick={addRow}>+ Add Vaccine Record</button>
 
-              {error && <div className="error-msg" style={{marginTop: 16}}>⚠ {error}</div>}
+              {error && <div className="error-msg" style={{ marginTop: 16 }}>⚠ {error}</div>}
 
               <div className="step-actions">
                 <button className="btn btn-outline" onClick={() => setStep(2)}>← Back</button>

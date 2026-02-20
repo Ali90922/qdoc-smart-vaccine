@@ -128,7 +128,7 @@
 
 .vaccine-table {
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
   border-radius: var(--radius-lg);
 }
 
@@ -156,6 +156,8 @@
   animation: fadeUp 0.4s ease forwards;
   opacity: 0;
   background: #fff;
+  position: relative;
+  overflow: visible;
 }
 
 .table-row:last-child { border-bottom: none; }
@@ -166,6 +168,65 @@
 .vaccine-name { display: flex; flex-direction: column; gap: 2px; }
 .vname { font-size: 14px; font-weight: 600; color: var(--qdoc-text); }
 .vreason { font-size: 12px; color: #6f859a; }
+.vname-info {
+  font-size: 12px;
+  color: #6f8598;
+  margin-left: 6px;
+}
+
+.has-tooltip {
+  position: relative;
+  cursor: help;
+  outline: none;
+}
+
+.has-tooltip:hover,
+.has-tooltip:focus {
+  z-index: 80;
+}
+
+.vtooltip {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 10px);
+  width: min(300px, calc(100vw - 40px));
+  background: #1c3852;
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+  line-height: 1.35;
+  z-index: 40;
+  display: none;
+}
+
+.vtooltip::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  background: #1c3852;
+  transform: rotate(45deg);
+}
+
+.vtooltip strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #cfe8ff;
+}
+
+.vtooltip span {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.has-tooltip:hover .vtooltip,
+.has-tooltip:focus .vtooltip {
+  display: block;
+}
 
 .date-cell,
 .dose-cell {
@@ -310,5 +371,9 @@
     gap: 8px;
     border-left: none;
     border-bottom: 1px solid var(--qdoc-border);
+  }
+
+  .vtooltip {
+    display: none !important;
   }
 }

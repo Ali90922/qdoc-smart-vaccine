@@ -31,6 +31,17 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('en-CA', { year:'numeric', month:'short', day:'numeric' })
 }
 
+function tooltipText(v) {
+  const lines = [
+    `Status: ${STATUS_CONFIG[v.status]?.label || v.status}`,
+    `Doses: ${v.doses_received}/${v.doses_required}`,
+    `Last Dose: ${fmtDate(v.last_dose)}`,
+    `Next Due: ${v.next_due ? fmtDate(v.next_due) : '—'}`,
+  ]
+  if (v.reason) lines.unshift(`Reason: ${v.reason}`)
+  return lines.join('\n')
+}
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const [data, setData]         = useState(null)
@@ -184,9 +195,17 @@ export default function Dashboard() {
 
             {filtered.map((v, i) => (
               <div key={v.vaccine_key} className={`table-row ${v.status.toLowerCase()}`} style={{ animationDelay: `${i * 0.04}s` }}>
-                <div className="vaccine-name">
-                  <span className="vname">{v.vaccine_name}</span>
+                <div className="vaccine-name has-tooltip" tabIndex={0} aria-label={tooltipText(v)}>
+                  <span className="vname">{v.vaccine_name} <span className="vname-info">ⓘ</span></span>
                   {v.reason && <span className="vreason">{v.reason}</span>}
+                  <span className="vtooltip" role="tooltip">
+                    <strong>{v.vaccine_name}</strong>
+                    <span>{`Status: ${STATUS_CONFIG[v.status]?.label || v.status}`}</span>
+                    {v.reason && <span>{`Reason: ${v.reason}`}</span>}
+                    <span>{`Doses: ${v.doses_received}/${v.doses_required}`}</span>
+                    <span>{`Last Dose: ${fmtDate(v.last_dose)}`}</span>
+                    <span>{`Next Due: ${v.next_due ? fmtDate(v.next_due) : '—'}`}</span>
+                  </span>
                 </div>
                 <div><Badge status={v.status} /></div>
                 <div className="date-cell">{fmtDate(v.last_dose)}</div>

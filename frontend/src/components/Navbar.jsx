@@ -32,6 +32,7 @@ export default function Navbar() {
         </Link>
         <div className="navbar-links">
           <Link to="/dashboard" className={`nav-link ${active('/dashboard')}`}>Dashboard</Link>
+          <Link to="/profile"   className={`nav-link ${active('/profile')}`}>Profile</Link>
           <Link to="/schedule"  className={`nav-link ${active('/schedule')}`}>Schedule</Link>
         </div>
         <button className="btn btn-outline btn-sm" onClick={logout}>Sign Out</button>
