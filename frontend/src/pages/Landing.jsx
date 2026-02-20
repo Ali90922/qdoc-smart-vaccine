@@ -13,6 +13,7 @@ import { login, signup } from '../api'
 import './Landing.css'
 import qdocLogo from '../assets/qdoc-logo.png'
 import TopStrip from '../components/TopStrip'
+import QdocLegacySection from '../components/QdocLegacySection'
 
 export default function Landing() {
   const navigate      = useNavigate()
@@ -115,6 +116,7 @@ export default function Landing() {
           </div>
         </div>
       </div>
+      <QdocLegacySection />
     </>
   )
 }

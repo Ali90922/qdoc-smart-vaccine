@@ -1,0 +1,103 @@
+/* ==========================================
+ * File: frontend/src/components/QdocLegacySection.css
+ *     /\
+ *    / K2\
+ *   /______\
+ *  ~~~~~~~~~~
+ *   8,611m
+ * ========================================== */
+
+.qdoc-legacy {
+  background: #f2f2f2;
+  margin-top: 30px;
+}
+
+.qdoc-legacy-top {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 48px 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 30px;
+}
+
+.qdoc-legacy-copy h3 {
+  color: #89bf48;
+  font-size: 44px;
+  line-height: 1.05;
+  margin-bottom: 14px;
+}
+
+.qdoc-legacy-copy p {
+  color: #2f4d67;
+  max-width: 500px;
+  margin-bottom: 20px;
+}
+
+.qdoc-legacy-btn {
+  display: inline-flex;
+  text-decoration: none;
+  background: #116cb6;
+  color: #fff;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  padding: 12px 28px;
+}
+
+.qdoc-legacy-image {
+  width: 100%;
+  border-radius: 58px;
+  object-fit: cover;
+}
+
+.qdoc-legacy-grid {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 30px 20px 34px;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr 1.4fr;
+  gap: 26px;
+}
+
+.qdoc-legacy-brand img {
+  width: 180px;
+  margin-bottom: 12px;
+}
+
+.qdoc-legacy-brand p,
+.qdoc-legacy-col p {
+  color: #28425a;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+
+.qdoc-legacy-col h4 {
+  color: #203752;
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.qdoc-legacy-bottom {
+  background: #163c5b;
+  text-align: center;
+  padding: 16px 20px 18px;
+}
+
+.qdoc-legacy-bottom p {
+  color: #f0f6fc;
+  font-size: 13px;
+}
+
+@media (max-width: 1100px) {
+  .qdoc-legacy-top { grid-template-columns: 1fr; }
+  .qdoc-legacy-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 700px) {
+  .qdoc-legacy-copy h3 { font-size: 30px; }
+  .qdoc-legacy-grid { grid-template-columns: 1fr; }
+}
+
