@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login, signup } from '../api'
 import './Landing.css'
+import qdocLogo from '../assets/qdoc-logo.png'
 
 export default function Landing() {
   const navigate      = useNavigate()
@@ -36,11 +37,11 @@ export default function Landing() {
       <div className="landing-bg" />
 
       <div className="landing-left">
+        <img src={qdocLogo} alt="QDoc" className="hero-logo" />
         <div className="hero-tag">Manitoba Immunization Program</div>
         <h1 className="hero-title">
-          Your vaccine<br />
-          schedule,<br />
-          <span className="hero-accent">simplified.</span>
+          Preventive care,<br />
+          powered by <span className="hero-accent">QDoc.</span>
         </h1>
         <p className="hero-sub">
           QDoc tracks your immunization history, checks Manitoba eligibility rules,

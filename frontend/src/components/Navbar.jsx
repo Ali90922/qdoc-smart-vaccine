@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import './Navbar.css'
+import qdocLogo from '../assets/qdoc-logo.png'
 
 export default function Navbar() {
   const navigate  = useNavigate()
@@ -14,8 +15,8 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <Link to="/dashboard" className="navbar-brand">
-        <span className="brand-dot" />
-        QDoc
+        <img src={qdocLogo} alt="QDoc" className="navbar-logo" />
+        <span className="navbar-brand-text">Vaccine Portal</span>
       </Link>
       <div className="navbar-links">
         <Link to="/dashboard" className={`nav-link ${active('/dashboard')}`}>Dashboard</Link>
