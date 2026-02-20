@@ -29,22 +29,10 @@ qdoc-smart-vaccine/
 
 - Python 3.11+
 - Node.js 18+
-- PostgreSQL 15+
 
 ## Quick Start
 
-### 1) Database
-
-```bash
-psql postgres
-```
-
-```sql
-CREATE DATABASE qdoc;
-\q
-```
-
-### 2) Backend
+### 1) Backend
 
 ```bash
 cd backend
@@ -57,7 +45,7 @@ Backend:
 - API: [http://127.0.0.1:8000](http://127.0.0.1:8000)
 - Docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-### 3) Frontend
+### 2) Frontend
 
 ```bash
 cd frontend
@@ -97,6 +85,7 @@ Current organized coverage includes:
 
 ## Notes
 
+- Backend now uses a lightweight **pandas file store** (`backend/data_store/*.csv`), so no SQL database is required.
+- `python seed_vaccines.py` initializes vaccine catalog CSV data from the rule file.
 - Generated artifacts (`node_modules`, `dist`, `__pycache__`, local `.env`) are ignored by `.gitignore`.
 - See `backend/README.md` and `frontend/README.md` for service-specific details.
-

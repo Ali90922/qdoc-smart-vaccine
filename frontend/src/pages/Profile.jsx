@@ -10,7 +10,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { createProfile, getProfile } from '../api'
+import {
+  addVaccinationRecord,
+  createProfile,
+  deleteVaccinationRecord,
+  getProfile,
+  updateProfile,
+  updateVaccinationRecordDate,
+} from '../api'
 import './Profile.css'
 
 const VACCINES = [
@@ -48,6 +55,28 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
+function inferDoseHistory(rows) {
+  const grouped = new Map()
+  for (const row of rows) {
+    if (!row.vaccine_key || !row.date_given) continue
+    if (!grouped.has(row.vaccine_key)) grouped.set(row.vaccine_key, [])
+    grouped.get(row.vaccine_key).push(row)
+  }
+
+  const inferred = []
+  for (const [vaccineKey, entries] of grouped.entries()) {
+    const ordered = [...entries].sort((a, b) => new Date(a.date_given) - new Date(b.date_given))
+    ordered.forEach((entry, idx) => {
+      inferred.push({
+        vaccine_key: vaccineKey,
+        dose_number: idx + 1,
+        date_given: entry.date_given,
+      })
+    })
+  }
+  return inferred
+}
+
 export default function Profile() {
   const navigate = useNavigate()
 
@@ -66,6 +95,30 @@ export default function Profile() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [step, setStep] = useState(1)
+  const [addRecordForm, setAddRecordForm] = useState({ vaccine_key: '', date_given: '' })
+  const [addingRecord, setAddingRecord] = useState(false)
+  const [addRecordError, setAddRecordError] = useState('')
+  const [addRecordSuccess, setAddRecordSuccess] = useState('')
+  const [deletingRecordId, setDeletingRecordId] = useState(null)
+  const [editingDateId, setEditingDateId] = useState(null)
+  const [editingDateValue, setEditingDateValue] = useState('')
+  const [updatingDateId, setUpdatingDateId] = useState(null)
+  const [editingRisks, setEditingRisks] = useState(false)
+  const [savingRisks, setSavingRisks] = useState(false)
+  const [riskError, setRiskError] = useState('')
+  const [riskSuccess, setRiskSuccess] = useState('')
+  const [riskForm, setRiskForm] = useState({
+    gender: '',
+    is_pregnant: false,
+    is_immunocompromised: false,
+    has_diabetes: false,
+    has_chronic_lung: false,
+    has_heart_disease: false,
+    has_chronic_kidney: false,
+    has_chronic_liver: false,
+    has_asplenia: false,
+    has_hiv: false,
+  })
 
   useEffect(() => {
     getProfile()
@@ -90,9 +143,25 @@ export default function Profile() {
     )
   }, [existingProfile])
 
+  useEffect(() => {
+    if (!existingProfile) return
+    setRiskForm({
+      gender: existingProfile.gender || '',
+      is_pregnant: !!existingProfile.is_pregnant,
+      is_immunocompromised: !!existingProfile.is_immunocompromised,
+      has_diabetes: !!existingProfile.has_diabetes,
+      has_chronic_lung: !!existingProfile.has_chronic_lung,
+      has_heart_disease: !!existingProfile.has_heart_disease,
+      has_chronic_kidney: !!existingProfile.has_chronic_kidney,
+      has_chronic_liver: !!existingProfile.has_chronic_liver,
+      has_asplenia: !!existingProfile.has_asplenia,
+      has_hiv: !!existingProfile.has_hiv,
+    })
+  }, [existingProfile])
+
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }))
 
-  const addRow = () => setHistory((h) => [...h, { vaccine_key: '', dose_number: 1, date_given: '' }])
+  const addRow = () => setHistory((h) => [...h, { vaccine_key: '', date_given: '' }])
   const removeRow = (i) => setHistory((h) => h.filter((_, idx) => idx !== i))
   const updateRow = (i, key, val) => setHistory((h) => h.map((r, idx) => (idx === i ? { ...r, [key]: val } : r)))
 
@@ -100,7 +169,7 @@ export default function Profile() {
     setError('')
     setLoading(true)
     try {
-      const validHistory = history.filter((r) => r.vaccine_key && r.date_given)
+      const validHistory = inferDoseHistory(history)
       await createProfile({ ...form, vaccination_history: validHistory })
       navigate('/dashboard')
     } catch (err) {
@@ -108,6 +177,97 @@ export default function Profile() {
       setStep(1)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const submitAdditionalRecord = async () => {
+    if (!addRecordForm.vaccine_key || !addRecordForm.date_given) {
+      setAddRecordError('Please select a vaccine and date.')
+      return
+    }
+
+    setAddRecordError('')
+    setAddRecordSuccess('')
+    setAddingRecord(true)
+
+    try {
+      const res = await addVaccinationRecord(addRecordForm)
+      setExistingProfile(res.data)
+      setAddRecordForm({ vaccine_key: '', date_given: '' })
+      setAddRecordSuccess('Vaccination record added.')
+    } catch (err) {
+      setAddRecordError(err.response?.data?.detail || 'Failed to add vaccination record.')
+    } finally {
+      setAddingRecord(false)
+    }
+  }
+
+  const handleDeleteRecord = async (recordId) => {
+    const confirmed = window.confirm('Delete this vaccination record?')
+    if (!confirmed) return
+
+    setAddRecordError('')
+    setAddRecordSuccess('')
+    setDeletingRecordId(recordId)
+    try {
+      const res = await deleteVaccinationRecord(recordId)
+      setExistingProfile(res.data)
+      setAddRecordSuccess('Vaccination record deleted.')
+    } catch (err) {
+      setAddRecordError(err.response?.data?.detail || 'Failed to delete vaccination record.')
+    } finally {
+      setDeletingRecordId(null)
+    }
+  }
+
+  const startEditDate = (row) => {
+    setEditingDateId(row.id)
+    setEditingDateValue(String(row.date_given).slice(0, 10))
+    setAddRecordError('')
+    setAddRecordSuccess('')
+  }
+
+  const cancelEditDate = () => {
+    setEditingDateId(null)
+    setEditingDateValue('')
+  }
+
+  const saveEditDate = async (recordId) => {
+    if (!editingDateValue) {
+      setAddRecordError('Please select a valid date.')
+      return
+    }
+    setAddRecordError('')
+    setAddRecordSuccess('')
+    setUpdatingDateId(recordId)
+    try {
+      const res = await updateVaccinationRecordDate(recordId, { date_given: editingDateValue })
+      setExistingProfile(res.data)
+      setAddRecordSuccess('Vaccination date updated.')
+      setEditingDateId(null)
+      setEditingDateValue('')
+    } catch (err) {
+      setAddRecordError(err.response?.data?.detail || 'Failed to update vaccination date.')
+    } finally {
+      setUpdatingDateId(null)
+    }
+  }
+
+  const toggleRisk = (key, value) => setRiskForm((s) => ({ ...s, [key]: value }))
+
+  const saveRiskChanges = async () => {
+    setRiskError('')
+    setRiskSuccess('')
+    setSavingRisks(true)
+    try {
+      const res = await updateProfile(riskForm)
+      setExistingProfile(res.data)
+      setEditingRisks(false)
+      setRiskSuccess('Risk factors updated.')
+    } catch (err) {
+      setRiskError(err.response?.data?.detail || 'Failed to update risk factors.')
+    } finally {
+      setSavingRisks(false)
     }
   }
 
@@ -150,6 +310,47 @@ export default function Profile() {
                 <p>{selectedRisks.length ? selectedRisks.join(', ') : 'None selected'}</p>
               </div>
             </div>
+            <div className="profile-edit-actions">
+              <button className="btn btn-outline" onClick={() => setEditingRisks((s) => !s)}>
+                {editingRisks ? 'Cancel Edit' : 'Edit Risk Factors'}
+              </button>
+            </div>
+
+            {editingRisks && (
+              <div className="risk-edit-panel">
+                <div className="form-group" style={{ maxWidth: 260 }}>
+                  <label>Gender</label>
+                  <select value={riskForm.gender} onChange={(e) => toggleRisk('gender', e.target.value)}>
+                    <option value="">Select...</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other / Prefer not to say</option>
+                  </select>
+                </div>
+                <div className="risk-grid">
+                  {RISK_FACTORS.map((rf) => (
+                    <label key={rf.key} className={`risk-item ${riskForm[rf.key] ? 'checked' : ''}`}>
+                      <input
+                        type="checkbox"
+                        checked={!!riskForm[rf.key]}
+                        onChange={(e) => toggleRisk(rf.key, e.target.checked)}
+                      />
+                      <span className="risk-check">{riskForm[rf.key] ? '✓' : ''}</span>
+                      {rf.label}
+                    </label>
+                  ))}
+                </div>
+                {riskError && <div className="error-msg">⚠ {riskError}</div>}
+                <div className="profile-edit-actions">
+                  <button className="btn btn-primary" onClick={saveRiskChanges} disabled={savingRisks}>
+                    {savingRisks ? <span className="spinner" /> : null}
+                    Save Risk Changes
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {riskSuccess && <div className="success-msg" style={{ marginTop: 10 }}>{riskSuccess}</div>}
           </div>
 
           <div className="card profile-history-card fade-up">
@@ -162,16 +363,94 @@ export default function Profile() {
                   <span>Vaccine</span>
                   <span>Dose</span>
                   <span>Date Given</span>
+                  <span>Action</span>
                 </div>
                 {sortedHistory.map((row) => (
                   <div key={row.id} className="profile-history-row">
                     <span>{row.vaccine_name}</span>
                     <span>#{row.dose_number}</span>
-                    <span>{fmtDate(row.date_given)}</span>
+                    <span>
+                      {editingDateId === row.id ? (
+                        <input
+                          type="date"
+                          className="date-edit-input"
+                          value={editingDateValue}
+                          max={new Date().toISOString().split('T')[0]}
+                          onChange={(e) => setEditingDateValue(e.target.value)}
+                        />
+                      ) : (
+                        fmtDate(row.date_given)
+                      )}
+                    </span>
+                    <span>
+                      <div className="record-actions">
+                        {editingDateId === row.id ? (
+                          <>
+                            <button
+                              className="btn btn-primary profile-small-btn"
+                              onClick={() => saveEditDate(row.id)}
+                              disabled={updatingDateId === row.id}
+                            >
+                              {updatingDateId === row.id ? <span className="spinner" /> : null}
+                              Save
+                            </button>
+                            <button className="btn btn-outline profile-small-btn" onClick={cancelEditDate}>Cancel</button>
+                          </>
+                        ) : (
+                          <button className="btn btn-outline profile-small-btn" onClick={() => startEditDate(row)}>
+                            Edit Date
+                          </button>
+                        )}
+
+                        <button
+                          className="btn btn-danger profile-delete-btn"
+                          onClick={() => handleDeleteRecord(row.id)}
+                          disabled={deletingRecordId === row.id}
+                        >
+                          {deletingRecordId === row.id ? <span className="spinner" /> : null}
+                          Delete
+                        </button>
+                      </div>
+                    </span>
                   </div>
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="card profile-history-card fade-up">
+            <h2 className="step-title" style={{ marginBottom: 12 }}>Add Vaccination Record</h2>
+            <p className="step-desc" style={{ marginBottom: 14 }}>
+              Add new doses even after profile setup. Dose number is inferred automatically.
+            </p>
+            <div className="history-row profile-add-row">
+              <div className="form-group">
+                <label>Vaccine</label>
+                <select
+                  value={addRecordForm.vaccine_key}
+                  onChange={(e) => setAddRecordForm((f) => ({ ...f, vaccine_key: e.target.value }))}
+                >
+                  <option value="">Select vaccine...</option>
+                  {VACCINES.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Date Given</label>
+                <input
+                  type="date"
+                  value={addRecordForm.date_given}
+                  max={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => setAddRecordForm((f) => ({ ...f, date_given: e.target.value }))}
+                />
+              </div>
+              <button className="btn btn-primary add-record-btn" onClick={submitAdditionalRecord} disabled={addingRecord}>
+                {addingRecord ? <span className="spinner" /> : null}
+                Add Record
+              </button>
+            </div>
+
+            {addRecordError && <div className="error-msg" style={{ marginTop: 10 }}>⚠ {addRecordError}</div>}
+            {addRecordSuccess && <div className="success-msg" style={{ marginTop: 10 }}>{addRecordSuccess}</div>}
           </div>
         </div>
       </div>
@@ -256,7 +535,7 @@ export default function Profile() {
           {step === 3 && (
             <div className="step-content">
               <h2 className="step-title">Vaccination History</h2>
-              <p className="step-desc">Add vaccines already received. Leave blank if none.</p>
+              <p className="step-desc">Add vaccines already received. Dose numbers are inferred from dates per vaccine.</p>
 
               {history.length === 0 && <div className="empty-history">No vaccination records added yet.</div>}
 
@@ -268,16 +547,6 @@ export default function Profile() {
                       <option value="">Select vaccine...</option>
                       {VACCINES.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
                     </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Dose #</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="4"
-                      value={row.dose_number}
-                      onChange={(e) => updateRow(i, 'dose_number', parseInt(e.target.value || '1', 10))}
-                    />
                   </div>
                   <div className="form-group">
                     <label>Date Given</label>

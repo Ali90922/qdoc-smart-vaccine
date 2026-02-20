@@ -25,6 +25,13 @@ function fmtDay(d) {
   return new Date(d).getDate()
 }
 
+function coverageHint(daysUntil) {
+  if (daysUntil == null) return 'Coverage window active'
+  if (daysUntil < 0) return `Coverage ended ${Math.abs(daysUntil)} days ago`
+  if (daysUntil === 0) return 'Coverage ends today'
+  return `Coverage remains for ${daysUntil} day${daysUntil === 1 ? '' : 's'}`
+}
+
 export default function Schedule() {
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
@@ -79,6 +86,7 @@ export default function Schedule() {
                   <div className="sched-info">
                     <div className="sched-vname">{v.vaccine_name}</div>
                     <div className="sched-due">Due {fmtDate(v.due_date)}</div>
+                    <div className="sched-coverage">{coverageHint(v.days_until)}</div>
                   </div>
                   <div className="sched-badge warn-badge">
                     {v.days_until === 0 ? 'Today' : `${v.days_until}d left`}
@@ -105,6 +113,7 @@ export default function Schedule() {
                   <div className="timeline-content card">
                     <div className="tl-vname">{v.vaccine_name}</div>
                     <div className="tl-vdate">Due {fmtDate(v.due_date)}</div>
+                    <div className="tl-coverage">{coverageHint(v.days_until)}</div>
                     {v.days_until != null && (
                       <div className="tl-days">in {v.days_until} days</div>
                     )}

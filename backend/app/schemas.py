@@ -58,6 +58,37 @@ class VaccinationRecordInput(BaseModel):
         return v
 
 
+class VaccinationRecordAddRequest(BaseModel):
+    vaccine_key: str
+    date_given: date
+
+    @field_validator("vaccine_key")
+    @classmethod
+    def vaccine_key_normalized(cls, v):
+        key = v.strip().lower()
+        if not key:
+            raise ValueError("vaccine_key cannot be empty.")
+        return key
+
+    @field_validator("date_given")
+    @classmethod
+    def date_not_in_future(cls, v):
+        if v > date.today():
+            raise ValueError("Vaccination date cannot be in the future.")
+        return v
+
+
+class VaccinationRecordDateUpdateRequest(BaseModel):
+    date_given: date
+
+    @field_validator("date_given")
+    @classmethod
+    def date_not_in_future(cls, v):
+        if v > date.today():
+            raise ValueError("Vaccination date cannot be in the future.")
+        return v
+
+
 class VaccinationRecordOut(BaseModel):
     id: int
     vaccine_key: str

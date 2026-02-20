@@ -49,6 +49,65 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('en-CA', { year:'numeric', month:'short', day:'numeric' })
 }
 
+function parseDateLocal(d) {
+  if (!d) return null
+  const s = String(d)
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  const dt = new Date(s)
+  if (Number.isNaN(dt.getTime())) return null
+  return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate())
+}
+
+function dayDiffFromToday(d) {
+  if (!d) return null
+  const msPerDay = 24 * 60 * 60 * 1000
+  const today = new Date()
+  const now = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+  const target = parseDateLocal(d)
+  if (!target) return null
+  const end = target.getTime()
+  return Math.floor((end - now) / msPerDay)
+}
+
+function getProtectionMeta(v) {
+  if (!v.last_dose && (v.doses_received || 0) === 0) {
+    return { cls: 'none', label: 'No active protection', detail: 'No dose recorded yet' }
+  }
+
+  if (v.next_due) {
+    const days = v.days_until != null ? v.days_until : dayDiffFromToday(v.next_due)
+    if (days < 0) {
+      return {
+        cls: 'expired',
+        label: `Expired ${Math.abs(days)}d ago`,
+        detail: `Coverage ended ${fmtDate(v.next_due)}`
+      }
+    }
+    if (days === 0) {
+      return { cls: 'warning', label: 'Ends today', detail: `Coverage ends ${fmtDate(v.next_due)}` }
+    }
+    if (days <= 30) {
+      return {
+        cls: 'warning',
+        label: `${days}d remaining`,
+        detail: `Coverage ends ${fmtDate(v.next_due)}`
+      }
+    }
+    return {
+      cls: 'active',
+      label: `${days}d protected`,
+      detail: `Coverage until ${fmtDate(v.next_due)}`
+    }
+  }
+
+  if ((v.doses_received || 0) >= (v.doses_required || 0)) {
+    return { cls: 'complete', label: 'Series complete', detail: 'No routine expiry configured' }
+  }
+
+  return { cls: 'building', label: 'Partial protection', detail: 'Further dose(s) required' }
+}
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const [data, setData]         = useState(null)
@@ -193,6 +252,7 @@ export default function Dashboard() {
               <span>Status</span>
               <span>Last Dose</span>
               <span>Next Due</span>
+              <span>Protection</span>
               <span>Doses</span>
               <span>Action</span>
             </div>
@@ -203,6 +263,7 @@ export default function Dashboard() {
 
             {filtered.map((v, i) => {
               const isExpanded = expandedKey === v.vaccine_key
+              const protection = getProtectionMeta(v)
               return (
                 <div key={v.vaccine_key}>
                   <div className={`table-row ${v.status.toLowerCase()}`} style={{ animationDelay: `${i * 0.04}s` }}>
@@ -223,6 +284,10 @@ export default function Dashboard() {
                       {v.next_due ? fmtDate(v.next_due) : '—'}
                       {v.days_until != null && <span className="days-tag">{v.days_until}d</span>}
                     </div>
+                    <div className="protect-cell">
+                      <span className={`protect-pill ${protection.cls}`}>{protection.label}</span>
+                      <span className="protect-note">{protection.detail}</span>
+                    </div>
                     <div className="dose-cell">{v.doses_received}/{v.doses_required}</div>
                     <div>
                       {(v.status === 'OVERDUE' || v.status === 'DUE_SOON') && (
@@ -240,6 +305,7 @@ export default function Dashboard() {
                     <div className="table-row-expanded">
                       <div className="expanded-grid">
                         <p><strong>Status:</strong> {STATUS_CONFIG[v.status]?.label || v.status}</p>
+                        <p><strong>Protection:</strong> {protection.label} ({protection.detail})</p>
                         <p><strong>Dose Progress:</strong> {v.doses_received}/{v.doses_required}</p>
                         <p><strong>Last Dose:</strong> {fmtDate(v.last_dose)}</p>
                         <p><strong>Next Due:</strong> {v.next_due ? fmtDate(v.next_due) : '—'}</p>

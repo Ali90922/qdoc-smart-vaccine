@@ -120,6 +120,19 @@
 .profile-card { animation: fadeUp 0.4s ease; }
 .profile-view-card { margin-bottom: 16px; }
 
+.profile-edit-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.risk-edit-panel {
+  margin-top: 14px;
+  border-top: 1px solid var(--qdoc-border);
+  padding-top: 14px;
+}
+
 .profile-view-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -155,7 +168,7 @@
 .profile-history-head,
 .profile-history-row {
   display: grid;
-  grid-template-columns: 2fr 0.8fr 1fr;
+  grid-template-columns: 2fr 0.8fr 1fr 0.9fr;
   gap: 14px;
   align-items: center;
   padding: 12px 14px;
@@ -179,6 +192,26 @@
 
 .profile-history-row:last-child {
   border-bottom: none;
+}
+
+.profile-delete-btn {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.record-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-small-btn {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.date-edit-input {
+  max-width: 160px;
 }
 
 .step-title {
@@ -249,7 +282,7 @@
 
 .history-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
+  grid-template-columns: 2fr 1fr auto;
   gap: 12px;
   align-items: end;
   margin-bottom: 12px;
@@ -261,6 +294,16 @@
 
 .remove-btn { padding: 12px 14px; }
 .add-btn { margin-bottom: 22px; }
+.add-record-btn {
+  align-self: end;
+  min-height: 44px;
+}
+
+.success-msg {
+  color: #1f7a45;
+  font-size: 13px;
+  font-weight: 600;
+}
 
 .empty-history {
   text-align: center;
@@ -298,6 +341,10 @@
     grid-template-columns: 1fr;
     gap: 8px;
     align-items: stretch;
+  }
+
+  .add-record-btn {
+    width: 100%;
   }
 
   .step-bar {

@@ -1,6 +1,6 @@
 # Backend
 
-FastAPI + SQLAlchemy service for vaccine eligibility, schedule classification, and reminder simulation.
+FastAPI service with a pandas-backed local store for vaccine eligibility, schedule classification, and reminder simulation.
 
 ## Structure
 
@@ -9,8 +9,9 @@ backend/
 ├── app/
 │   ├── data/                 # Vaccine rule definitions (JSON)
 │   ├── engine/               # Rule engine
+│   ├── pandas_store.py       # Pandas CSV persistence layer
 │   ├── routers/              # API route modules
-│   ├── database.py           # DB engine/session
+│   ├── database.py           # Legacy compatibility shim
 │   ├── dependencies.py       # Auth deps
 │   ├── main.py               # FastAPI app
 │   ├── models.py             # ORM models
@@ -28,8 +29,12 @@ backend/
 ```bash
 cd backend
 pip install -r requirements.txt
+python seed_vaccines.py
 uvicorn app.main:app --reload
 ```
+
+Backend persistence uses a pandas file store in `backend/data_store/*.csv`.
+No SQL database setup is required.
 
 ## Test
 
@@ -37,4 +42,3 @@ uvicorn app.main:app --reload
 cd backend
 pytest -q
 ```
-

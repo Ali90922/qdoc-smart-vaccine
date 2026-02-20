@@ -10,12 +10,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.database import engine
-from app.models import Base
 from app.routers import auth, profile, dashboard, schedule, reminders
+from app.pandas_store import ensure_vaccines_seeded
 
-# Create all tables on startup
-Base.metadata.create_all(bind=engine)
+ensure_vaccines_seeded()
 
 app = FastAPI(
     title="QDoc Vaccine System",

@@ -8,35 +8,28 @@
 # ===========================================
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session, joinedload
 
-from app.database import get_db
-from app.models import User, Patient, VaccinationRecord
 from app.schemas import DashboardOut, VaccineStatusOut
 from app.dependencies import get_current_user
 from app.engine.rule_engine import evaluate_patient, summarize
+from app.pandas_store import get_patient_by_user, get_vaccination_history, to_engine_patient, to_engine_records
 
 router = APIRouter()
 
 
 @router.get("/me", response_model=DashboardOut)
 def get_dashboard(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user = Depends(get_current_user)
 ):
-    patient = (
-        db.query(Patient)
-        .options(joinedload(Patient.records).joinedload(VaccinationRecord.vaccine))
-        .filter(Patient.user_id == current_user.id)
-        .first()
-    )
+    patient = get_patient_by_user(int(current_user["id"]))
     if not patient:
         raise HTTPException(status_code=404, detail="Profile not found. Please complete profile setup.")
 
-    records = patient.records or []
+    history = get_vaccination_history(int(patient["id"]))
+    patient_obj = to_engine_patient(patient)
+    records_obj = to_engine_records(history)
 
-    # Run the rule engine
-    results = evaluate_patient(patient, records)
+    results = evaluate_patient(patient_obj, records_obj)
     summary = summarize(results)
 
     # Sort: OVERDUE first, then DUE_SOON, UP_TO_DATE, NOT_ELIGIBLE
@@ -46,7 +39,7 @@ def get_dashboard(
     vaccines_out = [VaccineStatusOut(**r) for r in results]
 
     return DashboardOut(
-        patient_name=patient.name,
+        patient_name=str(patient["name"]),
         summary=summary,
         vaccines=vaccines_out
     )

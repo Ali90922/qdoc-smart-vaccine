@@ -232,8 +232,8 @@ def evaluate_patient(patient, records: list) -> list:
     Run the full rule engine for a patient against all vaccines.
 
     Parameters:
-        patient: SQLAlchemy Patient ORM object
-        records: list of VaccinationRecord ORM objects with .vaccine loaded
+        patient: patient object with DOB/risk flag attributes
+        records: list of record objects with .vaccine.vaccine_key and .date_given
 
     Returns:
         List of dicts with vaccine status for each vaccine

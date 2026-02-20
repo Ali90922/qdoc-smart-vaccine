@@ -101,6 +101,13 @@
   color: #678095;
 }
 
+.sched-coverage {
+  margin-top: 3px;
+  font-size: 12px;
+  color: #7a6a32;
+  font-weight: 600;
+}
+
 .sched-badge {
   border-radius: 999px;
   padding: 5px 10px;
@@ -192,6 +199,12 @@
 }
 
 .tl-vdate { font-size: 13px; color: #668095; }
+
+.tl-coverage {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #4e6f8a;
+}
 
 .tl-days {
   margin-top: 5px;

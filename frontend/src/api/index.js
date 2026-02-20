@@ -26,6 +26,9 @@ export const login   = (data) => api.post('/auth/login', data)
 export const createProfile = (data) => api.post('/profile', data)
 export const getProfile    = ()     => api.get('/profile/me')
 export const updateProfile = (data) => api.put('/profile/me', data)
+export const addVaccinationRecord = (data) => api.post('/profile/me/records', data)
+export const deleteVaccinationRecord = (recordId) => api.delete(`/profile/me/records/${recordId}`)
+export const updateVaccinationRecordDate = (recordId, data) => api.put(`/profile/me/records/${recordId}`, data)
 
 // Dashboard
 export const getDashboard  = ()     => api.get('/dashboard/me')

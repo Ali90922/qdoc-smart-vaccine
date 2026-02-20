@@ -21,3 +21,9 @@ frontend/.vite/
 
 # Logs
 *.log
+
+# Local SQLite files
+*.db
+
+# Local pandas store data
+backend/data_store/

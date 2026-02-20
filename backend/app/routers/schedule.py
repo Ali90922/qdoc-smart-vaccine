@@ -8,33 +8,27 @@
 # ===========================================
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session, joinedload
 
-from app.database import get_db
-from app.models import User, Patient, VaccinationRecord
 from app.schemas import ScheduleOut, ScheduleItemOut
 from app.dependencies import get_current_user
 from app.engine.rule_engine import evaluate_patient, get_upcoming_schedule
+from app.pandas_store import get_patient_by_user, get_vaccination_history, to_engine_patient, to_engine_records
 
 router = APIRouter()
 
 
 @router.get("/me", response_model=ScheduleOut)
 def get_schedule(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user = Depends(get_current_user)
 ):
-    patient = (
-        db.query(Patient)
-        .options(joinedload(Patient.records).joinedload(VaccinationRecord.vaccine))
-        .filter(Patient.user_id == current_user.id)
-        .first()
-    )
+    patient = get_patient_by_user(int(current_user["id"]))
     if not patient:
         raise HTTPException(status_code=404, detail="Profile not found. Please complete profile setup.")
 
-    records = patient.records or []
-    results = evaluate_patient(patient, records)
+    history = get_vaccination_history(int(patient["id"]))
+    patient_obj = to_engine_patient(patient)
+    records_obj = to_engine_records(history)
+    results = evaluate_patient(patient_obj, records_obj)
     upcoming = get_upcoming_schedule(results)
 
     items = [

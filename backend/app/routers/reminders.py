@@ -8,14 +8,18 @@
 # ===========================================
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List
 from datetime import datetime
 
-from app.database import get_db
-from app.models import User, Patient, Vaccine, Reminder
 from app.dependencies import get_current_user
+from app.pandas_store import (
+    get_patient_by_user,
+    get_vaccine_by_key,
+    add_reminder,
+    get_reminders as get_reminders_for_patient,
+    ensure_vaccines_seeded,
+)
 
 router = APIRouter()
 
@@ -38,56 +42,48 @@ class ReminderOut(BaseModel):
 @router.post("/send")
 def send_reminder(
     body: ReminderRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user = Depends(get_current_user)
 ):
-    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    ensure_vaccines_seeded()
+    patient = get_patient_by_user(int(current_user["id"]))
     if not patient:
         raise HTTPException(status_code=404, detail="Profile not found.")
 
-    vaccine = db.query(Vaccine).filter(Vaccine.vaccine_key == body.vaccine_key).first()
+    vaccine = get_vaccine_by_key(body.vaccine_key)
     if not vaccine:
         raise HTTPException(status_code=400, detail=f"Unknown vaccine: {body.vaccine_key}")
 
     if body.reminder_type not in ("email", "sms", "in_app"):
         raise HTTPException(status_code=400, detail="reminder_type must be 'email', 'sms', or 'in_app'")
 
-    reminder = Reminder(
-        patient_id=patient.id,
-        vaccine_id=vaccine.id,
+    add_reminder(
+        patient_id=int(patient["id"]),
+        vaccine_key=body.vaccine_key,
         reminder_type=body.reminder_type,
     )
-    db.add(reminder)
-    db.commit()
 
     return {
         "success": True,
-        "message": f"Reminder sent via {body.reminder_type} for {vaccine.name}"
+        "message": f"Reminder sent via {body.reminder_type} for {vaccine['name']}"
     }
 
 
 @router.get("/me", response_model=List[ReminderOut])
 def get_reminders(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user = Depends(get_current_user)
 ):
-    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    patient = get_patient_by_user(int(current_user["id"]))
     if not patient:
         raise HTTPException(status_code=404, detail="Profile not found.")
 
-    reminders = (
-        db.query(Reminder)
-        .filter(Reminder.patient_id == patient.id)
-        .order_by(Reminder.sent_at.desc())
-        .all()
-    )
+    reminders = get_reminders_for_patient(int(patient["id"]))
 
     return [
         ReminderOut(
-            id=r.id,
-            vaccine_name=r.vaccine.name,
-            reminder_type=r.reminder_type,
-            sent_at=r.sent_at
+            id=int(r["id"]),
+            vaccine_name=str(r.get("name") or r["vaccine_key"]),
+            reminder_type=str(r["reminder_type"]),
+            sent_at=datetime.fromisoformat(str(r["sent_at"]))
         )
         for r in reminders
     ]

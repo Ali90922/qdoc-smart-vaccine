@@ -3,8 +3,8 @@
 ## High-Level Overview
 This project is a full-stack vaccine eligibility platform:
 - **Frontend (React + Vite)**: collects profile data and displays statuses, schedule, and reminders.
-- **Backend (FastAPI + SQLAlchemy)**: authenticates users, stores records, runs the vaccine rule engine, and returns classified outcomes.
-- **Database (PostgreSQL)**: persists users, profiles, vaccines, records, and reminders.
+- **Backend (FastAPI + pandas store)**: authenticates users, stores records, runs the vaccine rule engine, and returns classified outcomes.
+- **Data Store (CSV files)**: persists users, profiles, vaccines, records, and reminders in `backend/data_store`.
 
 ## System Diagram
 ```mermaid
@@ -14,7 +14,7 @@ flowchart LR
     API --> R["Routers\n(auth/profile/dashboard/schedule/reminders)"]
     R --> E["Rule Engine\n(app/engine/rule_engine.py)"]
     E --> D["Rule Definitions\n(app/data/vaccine_rules.json)"]
-    R --> DB[("PostgreSQL")]
+    R --> DB[("CSV Data Store")]
     DB --> R
     R --> FE
     FE --> U
@@ -22,7 +22,7 @@ flowchart LR
 
 ## Request/Data Flow
 1. User signs up/logs in and submits profile + health flags.
-2. Backend stores profile and vaccine history records in PostgreSQL.
+2. Backend stores profile and vaccine history records in CSV files via the pandas store.
 3. Dashboard/Schedule endpoints call the rule engine.
 4. Rule engine loads JSON rules, evaluates age/risk/cohort/timing logic, and classifies each vaccine.
 5. Backend returns normalized results (`OVERDUE`, `DUE_SOON`, `UP_TO_DATE`, `NOT_ELIGIBLE`) to the frontend.
@@ -30,7 +30,8 @@ flowchart LR
 
 ## Key Backend Files
 - `backend/app/main.py`: FastAPI app entrypoint and router registration.
-- `backend/app/database.py`: SQLAlchemy engine/session configuration.
+- `backend/app/pandas_store.py`: CSV-based persistence and adapters for engine input objects.
+- `backend/app/database.py`: compatibility shim (legacy).
 - `backend/app/models.py`: ORM entities (users, patient profile, vaccines, records, reminders).
 - `backend/app/schemas.py`: Pydantic request/response validation models.
 - `backend/app/dependencies.py`: auth/DI helpers used by routers.

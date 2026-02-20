@@ -8,15 +8,13 @@
 # ===========================================
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 import os
 
-from app.database import get_db
-from app.models import User, Patient
 from app.schemas import SignupRequest, LoginRequest, AuthResponse
+from app.pandas_store import create_user, get_user_by_email, has_patient_for_user, ensure_vaccines_seeded
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -43,36 +41,32 @@ def _create_token(user_id: int) -> str:
 
 
 @router.post("/signup", response_model=AuthResponse)
-def signup(body: SignupRequest, db: Session = Depends(get_db)):
-    # Check if email already exists
-    existing = db.query(User).filter(User.email == body.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Email already registered.")
-
-    user = User(email=body.email, password_hash=_hash(body.password))
-    db.add(user)
-    db.commit()
-    db.refresh(user)
+def signup(body: SignupRequest):
+    ensure_vaccines_seeded()
+    try:
+        user = create_user(body.email, _hash(body.password))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     return AuthResponse(
-        token=_create_token(user.id),
-        user_id=user.id,
+        token=_create_token(int(user["id"])),
+        user_id=int(user["id"]),
         is_new_user=True
     )
 
 
 @router.post("/login", response_model=AuthResponse)
-def login(body: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == body.email).first()
+def login(body: LoginRequest):
+    ensure_vaccines_seeded()
+    user = get_user_by_email(body.email)
 
-    if not user or not _verify(body.password, user.password_hash):
+    if not user or not _verify(body.password, str(user["password_hash"])):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
-    # Check if profile exists to determine is_new_user
-    has_profile = db.query(Patient).filter(Patient.user_id == user.id).first() is not None
+    has_profile = has_patient_for_user(int(user["id"]))
 
     return AuthResponse(
-        token=_create_token(user.id),
-        user_id=user.id,
+        token=_create_token(int(user["id"])),
+        user_id=int(user["id"]),
         is_new_user=not has_profile
     )
