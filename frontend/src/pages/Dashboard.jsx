@@ -21,6 +21,24 @@ const STATUS_CONFIG = {
   NOT_ELIGIBLE:{ label: 'Not Eligible',cls: 'not_eligible', icon: '—' },
 }
 
+const VACCINE_INFO = {
+  influenza: 'Annual seasonal flu vaccine recommended for people 6 months and older.',
+  dtap_ipv_hib: 'Childhood combo vaccine for diphtheria, tetanus, pertussis, polio, and Hib.',
+  tdap_ipv: 'Preschool booster covering tetanus, diphtheria, pertussis, and polio.',
+  tdap: 'Booster for adolescents/adults to maintain protection against tetanus, diphtheria, and pertussis.',
+  pneu_c_15: 'Pneumococcal vaccine typically used in infant immunization schedules.',
+  pneu_c_20: 'Pneumococcal vaccine for eligible adults, including seniors and high-risk patients.',
+  rotavirus: 'Infant vaccine that helps prevent severe rotavirus diarrhea and dehydration.',
+  mmrv: 'Combined measles, mumps, rubella, and varicella vaccine for pediatric use.',
+  mmr: 'Measles, mumps, rubella vaccine commonly used in older children and adults.',
+  varicella: 'Chickenpox protection vaccine, often delivered in a 2-dose series.',
+  men_c_acyw: 'Meningococcal vaccine that protects against multiple invasive strains.',
+  hepatitis_b: 'Hepatitis B protection, often delivered as a multi-dose series.',
+  hepatitis_a: 'Hepatitis A vaccine for eligible groups, including certain higher-risk patients.',
+  hpv: 'Human papillomavirus vaccine that lowers risk of HPV-related cancers.',
+  rsv: 'Respiratory syncytial virus protection for eligible older adults.',
+}
+
 function Badge({ status }) {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.NOT_ELIGIBLE
   return <span className={`badge badge-${cfg.cls}`}>{cfg.icon} {cfg.label}</span>
@@ -29,17 +47,6 @@ function Badge({ status }) {
 function fmtDate(d) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('en-CA', { year:'numeric', month:'short', day:'numeric' })
-}
-
-function tooltipText(v) {
-  const lines = [
-    `Status: ${STATUS_CONFIG[v.status]?.label || v.status}`,
-    `Doses: ${v.doses_received}/${v.doses_required}`,
-    `Last Dose: ${fmtDate(v.last_dose)}`,
-    `Next Due: ${v.next_due ? fmtDate(v.next_due) : '—'}`,
-  ]
-  if (v.reason) lines.unshift(`Reason: ${v.reason}`)
-  return lines.join('\n')
 }
 
 export default function Dashboard() {
@@ -51,6 +58,7 @@ export default function Dashboard() {
   const [sending, setSending]   = useState({})
   const [toast, setToast]       = useState('')
   const [reminderModal, setReminderModal] = useState(null)
+  const [expandedKey, setExpandedKey] = useState(null)
 
   useEffect(() => {
     getDashboard()
@@ -193,40 +201,56 @@ export default function Dashboard() {
               <div className="table-empty">No vaccines match this filter.</div>
             )}
 
-            {filtered.map((v, i) => (
-              <div key={v.vaccine_key} className={`table-row ${v.status.toLowerCase()}`} style={{ animationDelay: `${i * 0.04}s` }}>
-                <div className="vaccine-name has-tooltip" tabIndex={0} aria-label={tooltipText(v)}>
-                  <span className="vname">{v.vaccine_name} <span className="vname-info">ⓘ</span></span>
-                  {v.reason && <span className="vreason">{v.reason}</span>}
-                  <span className="vtooltip" role="tooltip">
-                    <strong>{v.vaccine_name}</strong>
-                    <span>{`Status: ${STATUS_CONFIG[v.status]?.label || v.status}`}</span>
-                    {v.reason && <span>{`Reason: ${v.reason}`}</span>}
-                    <span>{`Doses: ${v.doses_received}/${v.doses_required}`}</span>
-                    <span>{`Last Dose: ${fmtDate(v.last_dose)}`}</span>
-                    <span>{`Next Due: ${v.next_due ? fmtDate(v.next_due) : '—'}`}</span>
-                  </span>
-                </div>
-                <div><Badge status={v.status} /></div>
-                <div className="date-cell">{fmtDate(v.last_dose)}</div>
-                <div className="date-cell">
-                  {v.next_due ? fmtDate(v.next_due) : '—'}
-                  {v.days_until != null && <span className="days-tag">{v.days_until}d</span>}
-                </div>
-                <div className="dose-cell">{v.doses_received}/{v.doses_required}</div>
-                <div>
-                  {(v.status === 'OVERDUE' || v.status === 'DUE_SOON') && (
-                    <button
-                      className="btn btn-remind"
-                      onClick={() => setReminderModal({ key: v.vaccine_key, name: v.vaccine_name })}
-                      disabled={sending[v.vaccine_key]}
-                    >
-                      {sending[v.vaccine_key] ? <span className="spinner" style={{width:14,height:14}} /> : '🔔 Remind'}
-                    </button>
+            {filtered.map((v, i) => {
+              const isExpanded = expandedKey === v.vaccine_key
+              return (
+                <div key={v.vaccine_key}>
+                  <div className={`table-row ${v.status.toLowerCase()}`} style={{ animationDelay: `${i * 0.04}s` }}>
+                    <div className="vaccine-name">
+                      <button
+                        className="vname-toggle"
+                        onClick={() => setExpandedKey(isExpanded ? null : v.vaccine_key)}
+                        aria-expanded={isExpanded}
+                      >
+                        <span className="vname">{v.vaccine_name}</span>
+                        <span className="vname-info">{isExpanded ? '▴' : '▾'}</span>
+                      </button>
+                      {v.reason && <span className="vreason">{v.reason}</span>}
+                    </div>
+                    <div><Badge status={v.status} /></div>
+                    <div className="date-cell">{fmtDate(v.last_dose)}</div>
+                    <div className="date-cell">
+                      {v.next_due ? fmtDate(v.next_due) : '—'}
+                      {v.days_until != null && <span className="days-tag">{v.days_until}d</span>}
+                    </div>
+                    <div className="dose-cell">{v.doses_received}/{v.doses_required}</div>
+                    <div>
+                      {(v.status === 'OVERDUE' || v.status === 'DUE_SOON') && (
+                        <button
+                          className="btn btn-remind"
+                          onClick={() => setReminderModal({ key: v.vaccine_key, name: v.vaccine_name })}
+                          disabled={sending[v.vaccine_key]}
+                        >
+                          {sending[v.vaccine_key] ? <span className="spinner" style={{width:14,height:14}} /> : '🔔 Remind'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="table-row-expanded">
+                      <div className="expanded-grid">
+                        <p><strong>Status:</strong> {STATUS_CONFIG[v.status]?.label || v.status}</p>
+                        <p><strong>Dose Progress:</strong> {v.doses_received}/{v.doses_required}</p>
+                        <p><strong>Last Dose:</strong> {fmtDate(v.last_dose)}</p>
+                        <p><strong>Next Due:</strong> {v.next_due ? fmtDate(v.next_due) : '—'}</p>
+                        {v.reason && <p><strong>Reason:</strong> {v.reason}</p>}
+                        <p><strong>About this vaccine:</strong> {VACCINE_INFO[v.vaccine_key] || 'General protection vaccine included in your schedule based on age/risk rules.'}</p>
+                      </div>
+                    </div>
                   )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </div>

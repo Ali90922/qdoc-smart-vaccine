@@ -168,64 +168,47 @@
 .vaccine-name { display: flex; flex-direction: column; gap: 2px; }
 .vname { font-size: 14px; font-weight: 600; color: var(--qdoc-text); }
 .vreason { font-size: 12px; color: #6f859a; }
+
+.vname-toggle {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  cursor: pointer;
+}
+
 .vname-info {
-  font-size: 12px;
+  font-size: 13px;
   color: #6f8598;
-  margin-left: 6px;
+  line-height: 1;
 }
 
-.has-tooltip {
-  position: relative;
-  cursor: help;
-  outline: none;
+.table-row-expanded {
+  border-bottom: 1px solid var(--qdoc-border);
+  background: #f8fbfe;
+  padding: 0 20px 14px;
 }
 
-.has-tooltip:hover,
-.has-tooltip:focus {
-  z-index: 80;
+.expanded-grid {
+  border: 1px solid #d9e7f4;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
 }
 
-.vtooltip {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 10px);
-  width: min(300px, calc(100vw - 40px));
-  background: #1c3852;
-  color: #fff;
-  padding: 10px 12px;
-  border-radius: 10px;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.2);
+.expanded-grid p {
   font-size: 12px;
-  line-height: 1.35;
-  z-index: 40;
-  display: none;
+  color: #466279;
 }
 
-.vtooltip::before {
-  content: '';
-  position: absolute;
-  left: 14px;
-  top: -6px;
-  width: 12px;
-  height: 12px;
-  background: #1c3852;
-  transform: rotate(45deg);
-}
-
-.vtooltip strong {
-  display: block;
-  margin-bottom: 6px;
-  color: #cfe8ff;
-}
-
-.vtooltip span {
-  display: block;
-  margin-bottom: 2px;
-}
-
-.has-tooltip:hover .vtooltip,
-.has-tooltip:focus .vtooltip {
-  display: block;
+.expanded-grid p strong {
+  color: #21405e;
 }
 
 .date-cell,
@@ -373,7 +356,7 @@
     border-bottom: 1px solid var(--qdoc-border);
   }
 
-  .vtooltip {
-    display: none !important;
+  .expanded-grid {
+    grid-template-columns: 1fr;
   }
 }
