@@ -1,0 +1,362 @@
+                        Vaccine Rules Reference 
+                        Manitoba Health Immunization Program 
+                        Based on eligibility criteria updated December 2025 
+                         
+                        Sources: 
+                        https://www.gov.mb.ca/health/publichealth/cdc/vaccineeligibility.html 
+                        https://www.gov.mb.ca/health/publichealth/cdc/div/schedules.html 
+                        Influenza (Flu)  (influenza) 
+                        Annual seasonal flu vaccine for all Manitobans 6 months and older. 
+                         
+                        Min age: 6 months 
+                        Max age: None 
+                        Doses required: 1 per season 
+                        Dose interval: N/A 
+                        Repeat interval: 365 days (annual) 
+                        Risk factors required: None - universally eligible 
+                        Contraindications: None 
+                        Pregnancy safe: Yes - recommended in pregnancy 
+                         
+                        Rules and Constraints 
+                             -   next_due = date_given + 365 days. 
+                             -   OVERDUE if past next_due. DUE_SOON if within 30 days. UP_TO_DATE otherwise. 
+                             -   Children under 9 receiving flu vaccine for the first time clinically need 2 doses in their first season. 
+                                 The rule engine applies 1-dose logic to all ages. 
+                             -   Adults 65 and older are eligible for an enhanced high-dose formulation. 
+                         
+                        Source: vaccineeligibility.html, schedules.html 
+                         
+                         
+                        DTaP-IPV-Hib  (dtap_ipv_hib) 
+                        Routine infant series protecting against Diphtheria, Tetanus, Pertussis, Polio, and Hib. Given at 2, 4, 6, 
+                        and 18 months. 
+                         
+                        Min age: 2 months 
+                        Max age: 83 months (under 7 years) 
+                        Doses required: 4 
+                        Dose interval: 56 days (8 weeks) minimum 
+                        Repeat interval: None - series only 
+                        Risk factors required: None 
+                        Contraindications: None 
+                        Pregnancy safe: No 
+                         
+                        Rules and Constraints 
+                             -   Hard age gates at both ends. 
+                             -   Under 2 months = NOT_ELIGIBLE, reason: too young. 
+                             -   84 months or older = NOT_ELIGIBLE, reason: too old. 
+                             -   83 months is the last eligible month. 
+                             -   Once eligible always eligible does NOT apply past the maximum age - this is a strict cutoff. 
+                         
+                        Source: vaccineeligibility.html 
+                         
+                         
+                        Tdap-IPV  (tdap_ipv) 
+                        Pre-school booster protecting against Tetanus, Diphtheria, Pertussis, and Polio. Given at 4 to 6 years. 
+                         
+                        Min age: 48 months (4 years) 
+                        Max age: 83 months (under 7 years) 
+                        Doses required: 1 
+                        Dose interval: N/A 
+                        Repeat interval: None 
+                        Risk factors required: None 
+                        Contraindications: None 
+                        Pregnancy safe: No 
+                         
+                        Rules and Constraints 
+                             -   Single pre-school booster dose only. 
+                             -   Adults are NOT eligible for Tdap-IPV - they receive Tdap instead. 
+                             -   Anyone outside the 48 to 83 month window returns NOT_ELIGIBLE. 
+                         
+                        Source: vaccineeligibility.html, schedules.html 
+                         
+                         
+                        Tdap  (tdap) 
+                        Tetanus, Diphtheria, and Pertussis booster for adolescents and adults. Repeated every 10 years. 
+                        Recommended in every pregnancy. 
+                         
+                        Min age: 156 months (13 years - Grade 8/9) 
+                        Max age: None 
+                        Doses required: 1, repeated every 10 years 
+                        Dose interval: N/A 
+                        Repeat interval: 3650 days (10 years) 
+                        Risk factors required: None 
+                        Contraindications: None 
+                        Pregnancy safe: Yes - recommended in every pregnancy 
+                         
+                        Rules and Constraints 
+                             -   next_due = date_given + 3650 days. 
+                             -   OVERDUE if past next_due. DUE_SOON if within 30 days. UP_TO_DATE with next_due and 
+                                 days_until populated. 
+                             -   Also eligible: adults born on or after January 1 1989 who missed the Grade 8/9 dose. 
+                             -   Recommended in every pregnancy regardless of prior dose timing, optimally at 27 to 32 weeks 
+                                 gestation. 
+                         
+                        Source: vaccineeligibility.html, schedules.html 
+                         
+                         
+                        Pneumococcal Conjugate (Pneu-C-15)  (pneu_c_15) 
+                        Routine paediatric pneumococcal vaccine. 3 doses at 2, 4, and 12 months. 
+                         
+                        Min age: 2 months 
+                        Max age: 59 months (under 5 years) 
+                        Doses required: 3 
+                        Dose interval: 56 days (8 weeks) minimum 
+                        Repeat interval: None - series only 
+                        Risk factors required: None 
+                        Contraindications: None 
+                        Pregnancy safe: No 
+                         
+                        Rules and Constraints 
+                             -   Children 24 to 59 months who missed earlier doses are eligible for 1 catch-up dose. 
+                             -   Schedules started with Pneu-C-13 do not need to be restarted. 
+                             -   High-risk children should receive Pneu-C-20 instead. 
+                         
+                        Source: vaccineeligibility.html, schedules.html 
+                         
+                         
+                        Pneumococcal Conjugate (Pneu-C-20)  (pneu_c_20) 
+                        For adults 65 and older (universally eligible) and adults 18 to 64 with a qualifying high-risk condition. One 
+                        dose only. 
+                         
+                        Min age: 216 months (18 years) for risk-based; 65 years for universal eligibility 
+                        Max age: None 
+                        Doses required: 1 
+                        Dose interval: N/A 
+                        Repeat interval: None - one-time dose 
+                        Risk factor overrides (age 18-64 only): has_diabetes, has_chronic_lung, has_heart_disease, 
+                        has_chronic_kidney, has_chronic_liver, has_asplenia, is_immunocompromised, has_hiv - any one 
+                        qualifies 
+                        Contraindications: None 
+                        Pregnancy safe: No 
+                         
+                        Rules and Constraints 
+                             -   Age 65 and older: universally eligible, no risk factor required. 
+                             -   Age 18 to 64: requires at least one risk override flag. Without one, NOT_ELIGIBLE with reason: 
+                                 eligible at age 65. 
+                             -   Under 18 with a risk factor: still NOT_ELIGIBLE with reason: too young 
+                                 (risk_override_min_age_months = 216). 
+                             -   One-time dose - a second dose of Pneu-C-20 is not recommended once received. 
+                         
+                        Source: vaccineeligibility.html 
+                         
+                         
+                        Rotavirus (Rotarix)  (rotavirus) 
+                        2-dose infant series. First dose must be given before 15 weeks of age. Both doses must be complete by 8 
+                        months. 
+                         
+                        Min age: 1 month (approximately 6 weeks) 
+                        Max age: 8 months (series must complete by this age) 
+                        Doses required: 2 
+                        Dose interval: 28 days (4 weeks) minimum 
+                        Repeat interval: None - series only 
+                        Risk factors required: None 
+                        Contraindications: None 
+                        Pregnancy safe: No 
+                         
+                        Rules and Constraints 
+                             -   The first dose must be given before 15 weeks of age (approximately 3.5 months). 
+                             -   If the infant has NOT started the series and is 15 weeks or older, returns NOT_ELIGIBLE with 
+                                 reason: too old to start. 
+                             -   This is an exception to the once-eligible-always-eligible principle. 
+                             -   If dose 1 has already been given, the series may continue past 15 weeks provided both doses 
+                                 complete by 8 months. 
+                             -   The rule engine evaluates started and unstarted infants through separate code paths. 
+                         
+                        Source: vaccineeligibility.html 
+                         
+                         
+                        MMRV  (mmrv) 
+                        Combined Measles, Mumps, Rubella, and Varicella vaccine for children 12 months to 12 years. Routine 
+                        doses at 12 months and 4 to 6 years. 
+                         
+                        Min age: 12 months 
+                        Max age: 155 months (under 13 years) 
+                        Doses required: 2 
+                        Dose interval: 42 days (6 weeks) minimum 
+                        Repeat interval: None - series only 
+                        Contraindications: is_immunocompromised, is_pregnant 
+                        Pregnancy safe: No - contraindicated (live vaccine) 
+                         
+                        Rules and Constraints 
+                             -   Contraindication check runs before the age check. If is_immunocompromised or is_pregnant is set, 
+                                 returns NOT_ELIGIBLE with reason: contraindicated, regardless of age. 
+                             -   MMRV is not approved by Health Canada for individuals 13 years of age or older. Max age of 155 
+                                 months enforces this. 
+                             -   At age 13 and older the components must be given separately as MMR and Varicella. 
+                         
+                        Source: vaccineeligibility.html 
+                         
+                         
+                        MMR  (mmr) 
+                        Measles, Mumps, Rubella. The number of doses required depends on the patient's birth year cohort per 
+                        Manitoba Health policy. 
+                         
+                        Min age: 12 months (routine) 
+                        Max age: None 
+                        Dose interval: 28 days (4 weeks) minimum between doses 
+                        Repeat interval: None - series only 
+                        Contraindications: is_immunocompromised, is_pregnant 
+                        Pregnancy safe: No - contraindicated (live vaccine) 
+                         
+                        Rules and Constraints 
+                             -   Contraindication check runs before all other logic. 
+                             -   Born before 1970: 0 doses required. Status = UP_TO_DATE with reason: considered immune. 
+                             -   Born 1970 to 1984: 1 dose required. 
+                             -   Born 1985 or later: 2 doses required. 
+                             -   Healthcare workers (is_healthcare_worker = true): always 2 doses regardless of birth year. 
+                             -   Travel dose: infants 6 to 11 months travelling to a measles-endemic country may receive 1 dose, 
+                                 but this does not count toward the routine schedule. 
+                         
+                        Source: vaccineeligibility.html 
+                         
+                         
+                        Varicella (Chickenpox)  (varicella) 
+                        2-dose chickenpox vaccine for individuals born in 2008 or later. The birth year cutoff is a hard rule. 
+                         
+                        Min age: 12 months 
+                        Max age: None (for those born 2008 or later) 
+                        Birth year minimum: 2008 
+                        Doses required: 2 
+                        Dose interval: 84 days (12 weeks) minimum 
+                        Repeat interval: None - series only 
+                        Contraindications: is_immunocompromised, is_pregnant 
+                        Pregnancy safe: No - contraindicated (live vaccine) 
+                         
+                        Rules and Constraints 
+                             -   Contraindication check runs before the birth year check. 
+                             -   Born before 2008 = NOT_ELIGIBLE with reason: born 2008 or later. 
+                             -   Those born before 2008 are assumed to have natural immunity from wild-type varicella exposure. 
+                             -   Individuals born before 2008 with zero doses may be eligible via the Not Previously Immunized 
+                                 schedule, which is not modeled in the current rules. 
+                         
+                        Source: vaccineeligibility.html 
+                         
+                         
+                        Meningococcal Conjugate (Men-C-ACYW)  (men_c_acyw) 
+                        Protects against 4 strains of meningococcal disease. Dose 1 at 12 months, dose 2 in Grade 6, 
+                        approximately 9 years later. 
+                         
+                        Min age: 12 months (routine); 2 months with a qualifying risk factor 
+                        Max age: None 
+                        Doses required: 2 
+                        Dose interval: 3285 days (~9 years) 
+                        Repeat interval: None (boosters every 3 to 5 years for high-risk not modeled) 
+                        Risk factor overrides: has_asplenia, has_hiv, is_immunocompromised - any one eligible from 2 months 
+                        Contraindications: None 
+                        Pregnancy safe: No 
+                         
+                        Rules and Constraints 
+                             -   The 3285-day dose interval encodes the clinical gap between the 12-month dose and the Grade 6 
+                                 booster. 
+                             -   A patient who recently received dose 1 shows UP_TO_DATE with reason: dose 2 of 2 due. 
+                             -   Status only becomes OVERDUE for dose 2 once 3285 days have elapsed since dose 1. 
+                             -   High-risk individuals are eligible from 2 months of age (risk_override_min_age_months = 2). 
+                         
+                        Source: vaccineeligibility.html, schedules.html 
+                         
+                         
+                        Hepatitis B  (hepatitis_b) 
+                        Routine Grade 6 school program (2 doses). High-risk individuals of any age require 3 doses. Risk factors 
+                        increase the dose count and lower the minimum eligible age to birth. 
+                         
+                        Min age (standard): 132 months (11 years - Grade 6) 
+                        Min age (with risk factor): 0 months (from birth) 
+                        Max age: None 
+                        Doses required (standard): 2 
+                        Doses required (with risk factor): 3 
+                        Dose interval: 120 days (~4 months) minimum 
+                        Risk factor overrides: has_chronic_liver, has_chronic_kidney, has_hiv, is_immunocompromised, 
+                        has_asplenia - any one sets doses to 3 and min age to 0 
+                        Contraindications: None 
+                        Pregnancy safe: Yes 
+                         
+                        Rules and Constraints 
+                             -   doses_required is not a fixed value - it is computed at runtime. 
+                             -   If any risk_factor_override flag is present, doses_required becomes 3. 
+                             -   Without a risk factor, doses_required remains 2. 
+                             -   risk_override_min_age_months = 0 means high-risk individuals are eligible from birth, bypassing 
+                                 the 132-month standard minimum age. 
+                         
+                        Source: vaccineeligibility.html, schedules.html 
+                         
+                         
+                        Hepatitis A  (hepatitis_a) 
+                        2-dose series for high-risk individuals 6 months and older. There is no base eligible population - a 
+                        qualifying risk condition is mandatory. 
+                         
+                        Min age: 6 months 
+                        Max age: None 
+                        Doses required: 2 
+                        Dose interval: 180 days (~6 months) minimum 
+                        Repeat interval: None - series only 
+                        Risk factors required: has_chronic_liver, has_chronic_kidney, has_hiv, is_immunocompromised - any 
+                        one qualifies 
+                        Risk factor overrides: None - risk_factors_required is the only entry point 
+                        Contraindications: None 
+                        Pregnancy safe: Yes 
+                         
+                        Rules and Constraints 
+                             -   risk_factors_required is not empty, so there is no base eligible population. 
+                             -   If no qualifying condition is present, returns NOT_ELIGIBLE with reason: only eligible with 
+                                 qualifying risk factor. 
+                             -   This differs from risk_factor_overrides - there is no default eligible group to expand from. 
+                             -   Manitoba Health policy also lists homelessness, illicit drug use, and MSM as qualifying conditions. 
+                                 The exact patient model field mapping should be verified in the rule engine. 
+                             -   Once eligibility is confirmed, standard 2-dose series logic applies with the 180-day interval. 
+                         
+                        Source: vaccineeligibility.html 
+                         
+                         
+                        Human Papillomavirus (HPV)  (hpv) 
+                        Routine Grade 6 school program. 2 doses if first dose given before age 15; 3 doses if first dose at age 15 
+                        or older. 
+                         
+                        Min age: 108 months (9 years) 
+                        Max age: None 
+                        Doses required (JSON default): 2 - computed dynamically at runtime 
+                        Dose interval: 180 days (~6 months) minimum 
+                        Repeat interval: None - series only 
+                        Risk factors required: None - universally eligible above minimum age 
+                        Contraindications: None 
+                        Pregnancy safe: No 
+                         
+                        Rules and Constraints 
+                             -   doses_required is computed from the patient's age at their FIRST DOSE, not their current age. 
+                             -   First dose given before the patient's 15th birthday = 2 doses total. 
+                             -   First dose given on or after the patient's 15th birthday = 3 doses total. 
+                             -   A series started before age 15 stays at 2 doses even if the patient is now 16 or older. 
+                             -   If no doses yet, current age is used to plan: under 15 plans for 2 doses; 15 and older plans for 3 
+                                 doses. 
+                             -   Routine school program: females born on or after January 1 1997 and males born on or after 
+                                 January 1 2002. 
+                         
+                        Source: vaccineeligibility.html, schedules.html 
+                         
+                         
+                        RSV Vaccine  (rsv) 
+                        For adults aged 60 and older. Manitoba Health policy ties eligibility to personal care home residence or 
+                        panel status, though the current rule engine triggers on age alone. 
+                         
+                        Min age: 720 months (60 years) 
+                        Max age: None 
+                        Doses required: 1 
+                        Dose interval: N/A 
+                        Repeat interval: 365 days (per vaccine_rules.json - see notes) 
+                        Risk factors required: None - age 60+ triggers eligibility per rule engine 
+                        Contraindications: None 
+                        Pregnancy safe: No 
+                         
+                        Rules and Constraints 
+                             -   The rule engine returns OVERDUE for any patient 60 or older with no RSV history. 
+                             -   Manitoba Health policy requires at least one care-setting qualifier: resides_in_pch, is_pch_respite, 
+                                 is_panelled_for_pch_in_transitional_care, or is_panelled_for_pch_in_chronic_care. 
+                             -   The current vaccine_rules.json does not enforce these flags - age alone triggers OVERDUE. This is 
+                                 a potential gap between the rule engine and Manitoba policy. 
+                             -   The JSON specifies repeat_interval_days = 365 but Manitoba Health policy intends RSV as a one-
+                                 time dose. This should be reviewed. 
+                             -   Infant RSV: infants born October 1 2025 to March 31 2026 are eligible for nirsevimab. This is not 
+                                 modeled in vaccine_rules.json. 
+                         
+                        Source: vaccineeligibility.html 
+                         
+                         
