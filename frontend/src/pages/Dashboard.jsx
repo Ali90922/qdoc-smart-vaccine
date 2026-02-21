@@ -49,6 +49,12 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('en-CA', { year:'numeric', month:'short', day:'numeric' })
 }
 
+function getNextDueDisplay(v) {
+  if (v?.status === 'OVERDUE') return fmtDate(new Date())
+  if (v?.next_due) return fmtDate(v.next_due)
+  return '—'
+}
+
 function parseDateLocal(d) {
   if (!d) return null
   const s = String(d)
@@ -281,8 +287,8 @@ export default function Dashboard() {
                     <div><Badge status={v.status} /></div>
                     <div className="date-cell">{fmtDate(v.last_dose)}</div>
                     <div className="date-cell">
-                      {v.next_due ? fmtDate(v.next_due) : '—'}
-                      {v.days_until != null && <span className="days-tag">{v.days_until}d</span>}
+                      {getNextDueDisplay(v)}
+                      {v.days_until != null && v.status !== 'OVERDUE' && <span className="days-tag">{v.days_until}d</span>}
                     </div>
                     <div className="protect-cell">
                       <span className={`protect-pill ${protection.cls}`}>{protection.label}</span>
@@ -308,7 +314,7 @@ export default function Dashboard() {
                         <p><strong>Protection:</strong> {protection.label} ({protection.detail})</p>
                         <p><strong>Dose Progress:</strong> {v.doses_received}/{v.doses_required}</p>
                         <p><strong>Last Dose:</strong> {fmtDate(v.last_dose)}</p>
-                        <p><strong>Next Due:</strong> {v.next_due ? fmtDate(v.next_due) : '—'}</p>
+                        <p><strong>Next Due:</strong> {getNextDueDisplay(v)}</p>
                         {v.reason && <p><strong>Reason:</strong> {v.reason}</p>}
                         <p><strong>About this vaccine:</strong> {VACCINE_INFO[v.vaccine_key] || 'General protection vaccine included in your schedule based on age/risk rules.'}</p>
                       </div>
