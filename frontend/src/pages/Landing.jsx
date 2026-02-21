@@ -33,7 +33,7 @@ export default function Landing() {
       const data = res.data
       localStorage.setItem('token', data.token)
       localStorage.setItem('user_id', data.user_id)
-      // If new user → profile creation; else → dashboard
+      // If new user -> profile creation; else -> dashboard
       navigate(data.is_new_user ? '/profile' : '/dashboard')
     } catch (err) {
       setError(err.response?.data?.detail || 'Something went wrong.')
@@ -97,7 +97,7 @@ export default function Landing() {
                 />
               </div>
 
-              {error && <div className="error-msg">⚠ {error}</div>}
+              {error && <div className="error-msg">Error: {error}</div>}
 
               <button className="btn btn-primary w-full" type="submit" disabled={loading}>
                 {loading ? <span className="spinner" /> : null}

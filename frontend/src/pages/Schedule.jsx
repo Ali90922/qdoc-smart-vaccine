@@ -82,7 +82,7 @@ export default function Schedule() {
 
         {upcoming.length === 0 && !error && (
           <div className="card sched-empty fade-up">
-            <div className="empty-icon">🎉</div>
+            <div className="empty-icon">OK</div>
             <h3>You're all caught up!</h3>
             <p>No upcoming vaccines found. Check your dashboard for overdue vaccines.</p>
           </div>
@@ -91,7 +91,7 @@ export default function Schedule() {
         {/* Due Soon section */}
         {dueSoon.length > 0 && (
           <div className="fade-up">
-            <div className="section-label">⚡ Action Required — Due Within 30 Days</div>
+            <div className="section-label">Action Required - Due Within 30 Days</div>
             <div className="sched-grid">
               {dueSoon.map((v, i) => (
                 <div key={v.vaccine_key} className="sched-card due-soon-card" style={{animationDelay:`${i*0.06}s`}}>
@@ -116,7 +116,7 @@ export default function Schedule() {
         {/* Future section */}
         {future.length > 0 && (
           <div className="fade-up" style={{marginTop: 36}}>
-            <div className="section-label">📅 Scheduled — Future Doses</div>
+            <div className="section-label">Scheduled - Future Doses</div>
             <div className="timeline-list">
               {future.map((v, i) => (
                 <div key={v.vaccine_key} className="timeline-item" style={{animationDelay:`${i*0.05}s`}}>

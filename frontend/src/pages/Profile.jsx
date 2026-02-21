@@ -349,12 +349,12 @@ export default function Profile() {
                         checked={!!riskForm[rf.key]}
                         onChange={(e) => toggleRisk(rf.key, e.target.checked)}
                       />
-                      <span className="risk-check">{riskForm[rf.key] ? '✓' : ''}</span>
+                      <span className="risk-check">{riskForm[rf.key] ? 'X' : ''}</span>
                       {rf.label}
                     </label>
                   ))}
                 </div>
-                {riskError && <div className="error-msg">⚠ {riskError}</div>}
+                {riskError && <div className="error-msg">Error: {riskError}</div>}
                 <div className="profile-edit-actions">
                   <button className="btn btn-primary" onClick={saveRiskChanges} disabled={savingRisks}>
                     {savingRisks ? <span className="spinner" /> : null}
@@ -463,7 +463,7 @@ export default function Profile() {
               </button>
             </div>
 
-            {addRecordError && <div className="error-msg" style={{ marginTop: 10 }}>⚠ {addRecordError}</div>}
+            {addRecordError && <div className="error-msg" style={{ marginTop: 10 }}>Error: {addRecordError}</div>}
             {addRecordSuccess && <div className="success-msg" style={{ marginTop: 10 }}>{addRecordSuccess}</div>}
           </div>
         </div>
@@ -486,7 +486,7 @@ export default function Profile() {
         <div className="step-bar fade-up">
           {['Personal Info', 'Risk Factors', 'Vaccine History'].map((s, i) => (
             <div key={i} className={`step-item ${step === i + 1 ? 'active' : ''} ${step > i + 1 ? 'done' : ''}`}>
-              <div className="step-circle">{step > i + 1 ? '✓' : i + 1}</div>
+              <div className="step-circle">{step > i + 1 ? 'Done' : i + 1}</div>
               <span>{s}</span>
             </div>
           ))}
@@ -518,7 +518,7 @@ export default function Profile() {
               </div>
               <div className="step-actions">
                 <button className="btn btn-primary" onClick={() => setStep(2)} disabled={!form.name || !form.dob}>
-                  Next: Risk Factors →
+                  Next: Risk Factors ->
                 </button>
               </div>
             </div>
@@ -533,14 +533,14 @@ export default function Profile() {
                 {RISK_FACTORS.map((rf) => (
                   <label key={rf.key} className={`risk-item ${form[rf.key] ? 'checked' : ''}`}>
                     <input type="checkbox" checked={form[rf.key]} onChange={(e) => set(rf.key, e.target.checked)} />
-                    <span className="risk-check">{form[rf.key] ? '✓' : ''}</span>
+                    <span className="risk-check">{form[rf.key] ? 'X' : ''}</span>
                     {rf.label}
                   </label>
                 ))}
               </div>
               <div className="step-actions">
-                <button className="btn btn-outline" onClick={() => setStep(1)}>← Back</button>
-                <button className="btn btn-primary" onClick={() => setStep(3)}>Next: Vaccine History →</button>
+                <button className="btn btn-outline" onClick={() => setStep(1)}>Back</button>
+                <button className="btn btn-primary" onClick={() => setStep(3)}>Next: Vaccine History -></button>
               </div>
             </div>
           )}
@@ -571,16 +571,16 @@ export default function Profile() {
                       onChange={(e) => updateRow(i, 'date_given', e.target.value)}
                     />
                   </div>
-                  <button className="btn btn-danger remove-btn" onClick={() => removeRow(i)}>✕</button>
+                  <button className="btn btn-danger remove-btn" onClick={() => removeRow(i)}>Remove</button>
                 </div>
               ))}
 
               <button className="btn btn-outline add-btn" onClick={addRow}>+ Add Vaccine Record</button>
 
-              {error && <div className="error-msg" style={{ marginTop: 16 }}>⚠ {error}</div>}
+              {error && <div className="error-msg" style={{ marginTop: 16 }}>Error: {error}</div>}
 
               <div className="step-actions">
-                <button className="btn btn-outline" onClick={() => setStep(2)}>← Back</button>
+                <button className="btn btn-outline" onClick={() => setStep(2)}>Back</button>
                 <button className="btn btn-primary" onClick={submit} disabled={loading}>
                   {loading ? <span className="spinner" /> : null}
                   Save & View Dashboard

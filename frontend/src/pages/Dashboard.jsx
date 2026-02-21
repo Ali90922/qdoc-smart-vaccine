@@ -15,10 +15,10 @@ import { getDashboard, sendReminder } from '../api'
 import './Dashboard.css'
 
 const STATUS_CONFIG = {
-  OVERDUE:     { label: 'Overdue',     cls: 'overdue',      icon: '⚠' },
-  DUE_SOON:    { label: 'Due Soon',    cls: 'due_soon',     icon: '⏰' },
-  UP_TO_DATE:  { label: 'Up to Date',  cls: 'up_to_date',   icon: '✓' },
-  NOT_ELIGIBLE:{ label: 'Not Eligible',cls: 'not_eligible', icon: '—' },
+  OVERDUE:     { label: 'Overdue',     cls: 'overdue',      icon: '!' },
+  DUE_SOON:    { label: 'Due Soon',    cls: 'due_soon',     icon: 'TIME' },
+  UP_TO_DATE:  { label: 'Up to Date',  cls: 'up_to_date',   icon: 'OK' },
+  NOT_ELIGIBLE:{ label: 'Not Eligible',cls: 'not_eligible', icon: '-' },
 }
 
 const VACCINE_INFO = {
@@ -147,7 +147,7 @@ export default function Dashboard() {
     try {
       await sendReminder({ vaccine_key, reminder_type: type })
       setReminderModal(null)
-      showToast(`🔔 Reminder set for ${vaccine_name}`)
+      showToast(`Reminder set for ${vaccine_name}`)
     } catch {
       showToast('Failed to send reminder.')
     } finally {
@@ -189,17 +189,17 @@ export default function Dashboard() {
               <p className="modal-sub">How would you like to be reminded about <strong>{reminderModal.name}</strong>?</p>
               <div className="modal-options">
                 <button className="remind-opt" onClick={() => handleRemind('email', reminderModal.key, reminderModal.name)}>
-                  <span className="remind-icon">📧</span>
+                  <span className="remind-icon">EMAIL</span>
                   <span className="remind-label">Email</span>
                   <span className="remind-desc">Send to your registered email</span>
                 </button>
                 <button className="remind-opt" onClick={() => handleRemind('sms', reminderModal.key, reminderModal.name)}>
-                  <span className="remind-icon">📱</span>
+                  <span className="remind-icon">SMS</span>
                   <span className="remind-label">SMS</span>
                   <span className="remind-desc">Text message reminder</span>
                 </button>
                 <button className="remind-opt" onClick={() => handleRemind('in_app', reminderModal.key, reminderModal.name)}>
-                  <span className="remind-icon">🔔</span>
+                  <span className="remind-icon">APP</span>
                   <span className="remind-label">In-App</span>
                   <span className="remind-desc">Notification in the app</span>
                 </button>
@@ -224,22 +224,22 @@ export default function Dashboard() {
             <div className="summary-card overdue-card">
               <div className="summary-num">{summary.overdue || 0}</div>
               <div className="summary-label">Overdue</div>
-              <div className="summary-icon">⚠</div>
+              <div className="summary-icon">!</div>
             </div>
             <div className="summary-card duesoon-card">
               <div className="summary-num">{summary.due_soon || 0}</div>
               <div className="summary-label">Due Soon</div>
-              <div className="summary-icon">⏰</div>
+              <div className="summary-icon">TIME</div>
             </div>
             <div className="summary-card uptodate-card">
               <div className="summary-num">{summary.up_to_date || 0}</div>
               <div className="summary-label">Up to Date</div>
-              <div className="summary-icon">✓</div>
+              <div className="summary-icon">OK</div>
             </div>
             <div className="summary-card noteligible-card">
               <div className="summary-num">{summary.not_eligible || 0}</div>
               <div className="summary-label">Not Eligible</div>
-              <div className="summary-icon">—</div>
+              <div className="summary-icon">-</div>
             </div>
           </div>
 
@@ -304,7 +304,7 @@ export default function Dashboard() {
                           onClick={() => setReminderModal({ key: v.vaccine_key, name: v.vaccine_name })}
                           disabled={sending[v.vaccine_key]}
                         >
-                          {sending[v.vaccine_key] ? <span className="spinner" style={{width:14,height:14}} /> : '🔔 Remind'}
+                          {sending[v.vaccine_key] ? <span className="spinner" style={{width:14,height:14}} /> : 'Remind'}
                         </button>
                       )}
                     </div>
