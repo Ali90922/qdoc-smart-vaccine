@@ -292,7 +292,13 @@
   background: #fbfdff;
 }
 
-.remove-btn { padding: 12px 14px; }
+.history-row .form-group { margin-bottom: 0; }
+
+.remove-btn {
+  padding: 12px 14px;
+  align-self: end;
+  margin-bottom: 2px;
+}
 .add-btn { margin-bottom: 22px; }
 .add-record-btn {
   align-self: end;
