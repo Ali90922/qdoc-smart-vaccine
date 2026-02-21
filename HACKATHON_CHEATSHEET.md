@@ -1,154 +1,73 @@
 # QDoc Smart Vaccine System - Judge Cheat Sheet
 
 ## 1) 30-Second Pitch
-We built a rule-based vaccine eligibility and reminder platform that takes a patient profile, applies Manitoba-aligned vaccine rules, classifies each vaccine into **OVERDUE / DUE_SOON / UP_TO_DATE / NOT_ELIGIBLE**, and simulates reminders. It is explainable (deterministic rules), test-backed, and designed for clinic workflows.
+We built a deterministic vaccine eligibility and reminder platform. It takes patient profile + vaccine history, applies Manitoba-aligned rule logic, and classifies each vaccine as:
+- `OVERDUE`
+- `DUE_SOON`
+- `UP_TO_DATE`
+- `NOT_ELIGIBLE`
 
-## 2) What Makes This Strong
-- **Deterministic rule engine**: no black-box model; every decision has a reason.
-- **Risk-aware eligibility**: age, contraindications, risk factors, and cohort logic.
-- **Timeline-ready outputs**: dates + status labels for patient-friendly display.
-- **Reminder-ready outputs**: due-soon detection for proactive outreach.
-- **Test coverage**: normal, boundary, edge, invalid, and empty cases.
+Every result is explainable and test-backed.
 
-## 3) Inference Engine (How Decisions Are Made)
-Source file: `backend/app/engine/rule_engine.py`
+## 2) Why This Scores Well
+- Deterministic rule engine (no black box).
+- Explainable reasons per status.
+- Handles age, risk, contraindications, cohort logic, and timing.
+- Frontend uses normalized status output for dashboard and schedule views.
+- Good automated coverage (`74 passed` backend tests).
 
-Pipeline per vaccine:
-1. Read patient age and risk flags.
+## 3) Decision Pipeline (Per Vaccine)
+Source: `backend/app/engine/rule_engine.py`
+
+1. Compute age in months + birth year.
 2. Load vaccine rule from `backend/app/data/vaccine_rules.json`.
-3. Check eligibility in order:
-   - min/max age
-   - birth-year cohort rules
+3. Compute dynamic required doses for specific vaccines.
+4. Run eligibility checks in sequence:
+   - age gates
+   - cohort gates
    - contraindications
-   - vaccine-specific special logic (MMR, Pneu-C-20)
-   - risk-factor required gates
-   - risk-factor override paths
-4. If not eligible -> `NOT_ELIGIBLE` with reason.
-5. If eligible:
-   - repeating vaccine (e.g., annual flu, periodic booster): classify by next due date
-   - multi-dose vaccine: evaluate doses received vs required, then due interval
-6. Return explainable record with:
-   - `status`, `reason`, `last_dose`, `next_due`, `days_until`, dose progress
+   - age-65+ shortcut where defined
+   - risk override / required-risk checks
+5. Apply timing logic:
+   - repeating vaccines via `repeat_interval_days`
+   - non-repeating vaccines via dose progress and `dose_interval_days`
+6. Return status + reason + timing fields.
 
-Status logic:
-- `OVERDUE`: due date in the past, or eligible with no doses started
-- `DUE_SOON`: due date in <= 30 days (`DUE_SOON_DAYS = 30`)
-- `UP_TO_DATE`: complete or due date beyond 30 days
-- `NOT_ELIGIBLE`: fails age/cohort/risk/contraindication checks
+## 4) Current Rule Highlights
+- `pneu_c_15`: infant 3-dose path vs catch-up 1-dose path.
+- `hpv`: 2 doses if started before 15, otherwise 3.
+- `hepatitis_b`: 2 baseline doses, 3 for high-risk profiles.
+- `mmr`: birth-year cohorts, including immune cohort handling (born before 1970).
+- `pneu_c_20`: age 65+ pathway and high-risk pathway.
+- `rotavirus`: explicit start-window guard for unstarted series.
+- `men_c_acyw`: long interval supports grade-6 style second-dose timing.
+- `rsv`: current rule base supports age-based 60+ annual pathway.
 
-## 4) Manitoba-Aligned Rule Highlights (Current)
+## 5) Status Semantics
+- `NOT_ELIGIBLE`: fails policy gates.
+- `OVERDUE`: eligible but missed/not started.
+- `DUE_SOON`: due in <= 30 days.
+- `UP_TO_DATE`: currently covered or completed.
 
-### Influenza
-- Eligible from 6 months+
-- Repeats yearly
+## 6) Demo Flow (2 Minutes)
+1. Show baseline profile and status mix (`NOT_ELIGIBLE` vs `OVERDUE`).
+2. Toggle risk factors and show deterministic status changes.
+3. Show cohort behavior (MMR birth-year effect).
+4. Show dynamic dose behavior (HPV or Hep B).
+5. Trigger reminder simulation for actionable vaccines.
+6. Close with test evidence (`cd backend && pytest -q`).
 
-### DTaP-IPV-Hib
-- Routine pediatric window (2 months to <7 years)
-- Multi-dose pediatric series
+## 7) Judge Q&A One-Liners
+- Why rules over AI?
+  - Clinical eligibility needs transparent, auditable logic.
+- How do policy changes get updated?
+  - Mostly JSON rule updates; code changes only for truly vaccine-specific logic.
+- How do you handle edge cases?
+  - Boundary, invalid-input, cohort, and risk-based scenarios are covered in tests.
 
-### Tdap-IPV
-- Preschool booster window (4 years to <7 years)
-
-### Tdap
-- Adolescent/adult booster pathway with repeating interval
-
-### Pneu-C-15
-- Pediatric conjugate schedule
-- Dose count adapts for catch-up age bands
-
-### Pneu-C-20
-- 65+ pathway supported
-- High-risk pathway supported from younger ages
-- Not broadly open to all healthy younger adults
-
-### Rotavirus
-- Infant-only window
-- Start-window guard (too old to start -> not eligible)
-
-### MMRV
-- Pediatric age cap enforced
-- Contraindication checks included
-
-### MMR
-- Infant travel/outbreak exception logic (6-11 months)
-- Birth-year cohort logic for adults (including pre-1970 immunity nuance)
-- Healthcare/student exception pathways
-
-### Varicella
-- Cohort logic (born-year cutoff) with contraindication checks
-
-### Men-C-ACYW
-- Routine schedule logic with high-risk override support
-
-### Hepatitis B
-- Baseline series + high-risk pathway logic
-
-### Hepatitis A
-- Risk-factor-gated eligibility
-
-### HPV
-- Dynamic dose logic:
-  - 2 doses when initiated before age 15
-  - 3 doses when initiated at/after age 15
-
-### RSV
-- 60+ plus care-setting criteria (not age-only)
-
-## 5) Why Judges Can Trust It
-- **Explainable output**: each status includes a human-readable reason.
-- **Deterministic & auditable**: same input -> same result every time.
-- **Separation of concerns**:
-  - rules in JSON
-  - engine in Python
-  - UI consuming normalized status output
-- **Strong test suite** (`backend/tests/engine/test_rule_engine.py`):
-  - normal paths
-  - boundary checks (exact ages, date thresholds)
-  - edge cases (invalid DOB, malformed records)
-  - cohort/risk special cases (MMR, RSV, Pneu-C-20, HPV)
-
-## 6) Rubric Mapping (What to Say)
-
-### Vaccine Rule Engine
-- "We implemented age, risk, cohort, contraindication, and repeat/dose interval logic in a deterministic rule engine."
-
-### Classification Accuracy
-- "Each vaccine is classified into 4 statuses with explicit date math and reasons."
-
-### Timeline Visualization
-- "UI shows clear status indicators and due timelines generated by the backend."
-
-### Smart Reminder System
-- "Due-soon is programmatically defined and can trigger simulated reminder actions."
-
-### Input & Technical Quality
-- "Validated schemas + organized backend/frontend + comprehensive tests."
-
-## 7) 2-Minute Demo Script
-1. Open a low-risk adult profile -> show `NOT_ELIGIBLE` vs `OVERDUE` differentiation.
-2. Toggle a risk factor (example: diabetes or care-setting flag) -> show rule-driven status change.
-3. Show MMR cohort behavior (birth year / travel exception case).
-4. Show HPV dose requirement change by age-at-initiation.
-5. Trigger reminder action for `DUE_SOON`/`OVERDUE` vaccines.
-6. End with test evidence (`pytest -q`) and architecture slide.
-
-## 8) Judge Q&A One-Liners
-- **"Why rules instead of AI?"**
-  - "Clinical eligibility must be transparent and auditable; rules are deterministic and safe for this use case."
-- **"How do you update policy changes?"**
-  - "Most updates are data-level changes in the rules JSON, with minimal engine code changes."
-- **"How do you handle edge cases?"**
-  - "We test boundaries, invalid inputs, malformed records, and cohort exceptions directly in unit tests."
-
-## 9) Stretch Improvements (If Asked)
-- Add product-history-aware pneumococcal sequencing details.
-- Add sex-at-birth and pregnancy-program pathways where policy requires.
-- Add admin UI for policy updates with version history.
-- Add reminder channel preferences and delivery logs.
-
----
-
-## Appendix: Core Backend Files
+## 8) Core Files
 - `backend/app/data/vaccine_rules.json`
 - `backend/app/engine/rule_engine.py`
 - `backend/tests/engine/test_rule_engine.py`
+- `frontend/src/pages/Dashboard.jsx`
+- `frontend/src/pages/Schedule.jsx`

@@ -89,3 +89,19 @@ Current organized coverage includes:
 - `python seed_vaccines.py` initializes vaccine catalog CSV data from the rule file.
 - Generated artifacts (`node_modules`, `dist`, `__pycache__`, local `.env`) are ignored by `.gitignore`.
 - See `backend/README.md` and `frontend/README.md` for service-specific details.
+
+## Recent Updates (Feb 21, 2026)
+
+- Rule engine updates:
+  - Dynamic required-dose logic for `pneu_c_15`, `hpv`, `hepatitis_b`, and `mmr`.
+  - MMR cohort handling updated (born before 1970 treated as immune -> `UP_TO_DATE` with `doses_required = 0`).
+  - Pneu-C-20 eligibility clarified for age 65+ path and high-risk medical conditions.
+  - Rotavirus start-window guard enforced for unstarted series.
+  - Men-C-ACYW long interval (`3285` days) supports grade-6 style booster timing.
+- Frontend date handling:
+  - Dashboard/Profile/Schedule now parse local dates explicitly to avoid timezone day-shift issues.
+  - Dashboard overdue "Next Due" display now uses current date behavior consistently.
+- UI content:
+  - Emoji/symbol indicators in frontend source were replaced with plain text indicators.
+- Validation:
+  - Current backend test suite status: `74 passed` (`cd backend && pytest -q`).

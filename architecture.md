@@ -26,7 +26,7 @@ flowchart LR
 3. Dashboard/Schedule endpoints call the rule engine.
 4. Rule engine loads JSON rules, evaluates age/risk/cohort/timing logic, and classifies each vaccine.
 5. Backend returns normalized results (`OVERDUE`, `DUE_SOON`, `UP_TO_DATE`, `NOT_ELIGIBLE`) to the frontend.
-6. Frontend renders timeline/table views and reminder actions.
+6. Frontend renders timeline/table views and reminder actions using local-date parsing to avoid timezone shift bugs.
 
 ## Key Backend Files
 - `backend/app/main.py`: FastAPI app entrypoint and router registration.
@@ -61,6 +61,20 @@ flowchart LR
 - `backend/tests/engine/test_rule_engine.py`: rule engine behavior and edge/boundary tests.
 - `backend/tests/schemas/test_profile_schemas.py`: input validation/schema tests.
 - `backend/tests/conftest.py`: shared test setup/import plumbing.
+- Current status: `74 passed` (`backend`, `pytest -q`).
+
+## Rule Engine Highlights (Current)
+- Dynamic dose requirements:
+  - `pneu_c_15`: 3-dose infant path vs 1-dose catch-up path.
+  - `hpv`: 2 doses if started before age 15, otherwise 3.
+  - `hepatitis_b`: 2 baseline doses, 3 for high-risk profiles.
+  - `mmr`: birth-year cohort logic (including immune cohort handling).
+- Eligibility sequencing:
+  - Age and contraindication checks first.
+  - Age 65+ path is handled before risk gates for vaccines with `eligible_at_65_plus`.
+- Key policy nuances:
+  - Rotavirus start-window guard for unstarted series.
+  - Men-C-ACYW long interval scheduling (grade-6 style spacing).
 
 ## Design Intent
 - Keep vaccine policy mostly data-driven via JSON.
