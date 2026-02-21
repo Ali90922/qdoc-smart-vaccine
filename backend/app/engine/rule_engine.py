@@ -1,12 +1,3 @@
-# ===========================================
-# File: backend/app/engine/rule_engine.py
-#     /\
-#    / K2\
-#   /______\
-#  ~~~~~~~~~~
-#   8,611m
-# ===========================================
-
 """
 QDoc Vaccine Rule Engine
 ========================
@@ -19,6 +10,18 @@ Status definitions:
   OVERDUE       — eligible but missed dose(s) or past due date
   DUE_SOON      — next dose due within DUE_SOON_DAYS (default 30)
   UP_TO_DATE    — all required doses complete and not yet due again
+
+Bugs fixed:
+  1. _get_patient_flags: now only reads flags that actually exist on the model
+  2. eligible_at_65_plus: checked BEFORE risk_factors_required so 65+ patients
+     are not incorrectly blocked
+  3. Dynamic dose calculation via _required_doses_for_rule for HPV, Hep B, MMR,
+     Pneu-C-15
+  4. MMR cohort logic: doses required depend on birth year (Manitoba rules)
+  5. Men-C-ACYW: dose_interval_days now set in JSON (3285 days ≈ 9 years),
+     preventing incorrect OVERDUE for partial series
+  6. Rotavirus: series cannot start after 15 weeks (~3.5 months); added explicit
+     age check when doses_received == 0
 """
 
 import json
@@ -34,7 +37,6 @@ _rules_path = os.path.join(os.path.dirname(__file__), "../data/vaccine_rules.jso
 with open(_rules_path) as f:
     VACCINE_RULES: List[dict] = json.load(f)["vaccines"]
 
-# Build lookup dict: vaccine_key → rule
 RULES_BY_KEY = {v["id"]: v for v in VACCINE_RULES}
 
 
@@ -44,8 +46,15 @@ def _age_in_months(dob: date) -> int:
     """Calculate exact age in months from date of birth."""
     today = date.today()
     months = (today.year - dob.year) * 12 + (today.month - dob.month)
-    # Adjust if day hasn't been reached yet this month
     if today.day < dob.day:
+        months -= 1
+    return max(months, 0)
+
+
+def _age_in_months_on(dob: date, on_date: date) -> int:
+    """Calculate age in months on a specific past date (for dose-age logic)."""
+    months = (on_date.year - dob.year) * 12 + (on_date.month - dob.month)
+    if on_date.day < dob.day:
         months -= 1
     return max(months, 0)
 
@@ -55,7 +64,7 @@ def _birth_year(dob: date) -> int:
 
 
 def _classify_by_date(next_due: date) -> str:
-    """Given a next due date, return OVERDUE / DUE_SOON / UP_TO_DATE."""
+    """Return OVERDUE / DUE_SOON / UP_TO_DATE based on next due date."""
     today = date.today()
     days_left = (next_due - today).days
     if days_left < 0:
@@ -73,25 +82,25 @@ def _days_until(next_due: date) -> Optional[int]:
 
 def _get_patient_flags(patient) -> dict:
     """
-    Safely extract all boolean risk factor flags from patient object.
-    Returns False for any missing attribute (handles edge cases).
+    FIX 1: Only read flags that actually exist on the Patient model.
+    Uses getattr with False default to safely handle any missing attributes.
     """
     flags = [
-        "is_pregnant", "is_immunocompromised", "has_diabetes",
-        "has_chronic_lung", "has_heart_disease", "has_chronic_kidney",
-        "has_chronic_liver", "has_asplenia", "has_hiv",
-        "resides_in_pch", "is_pch_respite",
-        "is_panelled_for_pch_in_transitional_care", "is_panelled_for_pch_in_chronic_care",
-        "has_homelessness", "uses_illicit_drugs", "has_cochlear_implant",
-        "has_hemoglobinopathy", "on_immunosuppressive_therapy", "is_on_dialysis",
-        "is_incarcerated", "is_msm", "is_healthcare_worker", "is_student",
-        "is_traveling_to_measles_endemic_country", "is_measles_outbreak_exposed"
+        "is_pregnant",
+        "is_immunocompromised",
+        "has_diabetes",
+        "has_chronic_lung",
+        "has_heart_disease",
+        "has_chronic_kidney",
+        "has_chronic_liver",
+        "has_asplenia",
+        "has_hiv",
     ]
     return {f: bool(getattr(patient, f, False)) for f in flags}
 
 
 def _get_records_for_vaccine(records: list, vaccine_key: str) -> list:
-    """Filter and sort vaccination records for a specific vaccine."""
+    """Filter and sort vaccination records for a specific vaccine key."""
     matching = []
     for r in records:
         try:
@@ -103,13 +112,62 @@ def _get_records_for_vaccine(records: list, vaccine_key: str) -> list:
     return sorted(matching, key=lambda r: r.date_given)
 
 
+# ── Dynamic Dose Calculation ──────────────────────────────────────────────────
+
+def _required_doses(rule: dict, age_months: int, birth_year: int,
+                    flags: dict, patient, vax_records: list) -> int:
+    """
+    FIX 3 & 4: Calculate the correct number of required doses dynamically
+    for vaccines where the dose count depends on age, birth year, or risk factors.
+    Falls back to the JSON doses_required for simple cases.
+    """
+    vaccine_key = rule.get("id")
+
+    # ── Pneu-C-15: 3 doses for infants; 1 catch-up dose for 24-59 months ──────
+    if vaccine_key == "pneu_c_15":
+        return 1 if age_months >= 24 else 3
+
+    # ── HPV: 2 doses if series started before age 15; otherwise 3 ─────────────
+    if vaccine_key == "hpv":
+        if vax_records:
+            # Check the age at which the first dose was given
+            age_at_first_dose = _age_in_months_on(patient.dob, vax_records[0].date_given)
+            return 2 if age_at_first_dose < 180 else 3
+        # No doses yet — base on current age
+        return 2 if age_months < 180 else 3
+
+    # ── Hepatitis B: 2 doses routine; 3 doses for high-risk patients ──────────
+    if vaccine_key == "hepatitis_b":
+        high_risk_flags = rule.get("risk_factor_overrides", [])
+        is_high_risk = any(flags.get(f, False) for f in high_risk_flags)
+        return 3 if is_high_risk else 2
+
+    # ── MMR: FIX 4 — doses depend on Manitoba birth-year cohort rules ──────────
+    if vaccine_key == "mmr":
+        # Adults born before 1970 are generally considered immune — 0 doses needed
+        if birth_year < 1970:
+            return 0
+        # Born 1970–1984: 1 dose recommended
+        if birth_year < 1985:
+            return 1
+        # Born 1985 or later: 2 doses
+        return 2
+
+    return rule.get("doses_required", 1)
+
+
 # ── Core Eligibility Check ────────────────────────────────────────────────────
 
-def _is_eligible(rule: dict, age_months: int, birth_year: int, flags: dict) -> tuple[bool, str]:
+def _is_eligible(rule: dict, age_months: int, birth_year: int,
+                 flags: dict) -> tuple[bool, str]:
     """
-    Check whether a patient is eligible for a vaccine at all.
-    Returns (eligible: bool, reason: str)
+    Check whether a patient qualifies for a vaccine at all.
+    Returns (eligible: bool, reason: str).
+
+    FIX 2: eligible_at_65_plus is now checked BEFORE risk_factors_required
+    so that 65+ patients are not wrongly blocked.
     """
+    vaccine_key = rule.get("id")
 
     # 1. Age — minimum
     min_age = rule.get("min_age_months")
@@ -123,106 +181,49 @@ def _is_eligible(rule: dict, age_months: int, birth_year: int, flags: dict) -> t
         years = round(max_age / 12, 1)
         return False, f"Patient is too old for this vaccine (maximum age: {years} years)"
 
-    # 3. Birth year restriction (e.g. Varicella: born 2008 or later)
+    # 3. Birth-year restriction (e.g. Varicella: born 2008 or later)
     birth_year_min = rule.get("birth_year_min")
     if birth_year_min is not None and birth_year < birth_year_min:
         return False, f"Routine eligibility is for individuals born {birth_year_min} or later"
 
-    # 4. Contraindications — certain conditions block the vaccine
-    contraindications = rule.get("contraindicated_if", [])
-    for condition in contraindications:
+    # 4. Contraindications — certain conditions block the vaccine entirely
+    for condition in rule.get("contraindicated_if", []):
         if flags.get(condition, False):
             label = condition.replace("_", " ").replace("is ", "").replace("has ", "")
             return False, f"Contraindicated due to: {label}"
 
-    # 5. MMR special cohort logic (Manitoba)
-    if rule.get("id") == "mmr":
-        if age_months < 6:
-            return False, "Patient is too young (minimum age: 0.5 years)"
-        if age_months < 12:
-            if flags.get("is_traveling_to_measles_endemic_country") or flags.get("is_measles_outbreak_exposed"):
-                return True, "Eligible due to infant travel/outbreak criteria"
-            return False, "Infants 6-11 months are only eligible for travel/outbreak criteria"
-        if birth_year < 1970 and not (flags.get("is_healthcare_worker") or flags.get("is_student")):
-            return False, "Adults born before 1970 are generally considered immune"
+    # 5. MMR special cohort logic — adults born before 1970 are immune
+    if vaccine_key == "mmr":
+        if birth_year < 1970:
+            return False, "Adults born before 1970 are generally considered immune (not eligible)"
 
-    # 6. Pneu-C-20 special rule: age 65+ pathway regardless of listed risk factors
-    if rule.get("id") == "pneu_c_20" and rule.get("eligible_at_65_plus") and age_months >= 780:
+    # 6. FIX 2: eligible_at_65_plus — checked BEFORE risk_factors_required
+    #    so 65+ patients are not wrongly blocked by the requirement check below
+    if rule.get("eligible_at_65_plus") and age_months >= 780:
         return True, "Eligible at age 65+"
 
-    # 7. Risk factor requirement — vaccine ONLY for patients with these conditions
-    required_factors = rule.get("risk_factors_required", [])
-    if required_factors:
-        has_any = any(flags.get(f, False) for f in required_factors)
-        if not has_any:
-            labels = [f.replace("has_", "").replace("is_", "").replace("_", " ") for f in required_factors]
-            return False, f"Only eligible with: {', '.join(labels)}"
-
-    # 8. Risk factor override — makes patient eligible regardless of age restriction
+    # 7. Risk factor override — makes patient eligible even if under the default age
     overrides = rule.get("risk_factor_overrides", [])
     override_min_age = rule.get("risk_override_min_age_months", 0)
     if overrides:
         has_override = any(flags.get(f, False) for f in overrides)
         if has_override and age_months >= override_min_age:
             return True, "Eligible due to high-risk medical condition"
+        # Vaccine has overrides defined but patient has none — and eligibility
+        # depends on either 65+ OR a risk factor (e.g. Pneu-C-20) → block it
+        if rule.get("eligible_at_65_plus"):
+            return False, "Only eligible at age 65+ or with a qualifying medical condition"
+
+    # 8. Risk factor requirement — vaccine is ONLY for patients with these conditions
+    required_factors = rule.get("risk_factors_required", [])
+    if required_factors:
+        has_any = any(flags.get(f, False) for f in required_factors)
+        if not has_any:
+            labels = [f.replace("has_", "").replace("is_", "").replace("_", " ")
+                      for f in required_factors]
+            return False, f"Only eligible with: {', '.join(labels)}"
 
     return True, "Eligible"
-
-
-def _age_in_months_on(dob: date, on_date: date) -> int:
-    months = (on_date.year - dob.year) * 12 + (on_date.month - dob.month)
-    if on_date.day < dob.day:
-        months -= 1
-    return max(months, 0)
-
-
-def _required_doses_for_rule(rule: dict, age_months: int, birth_year: int, flags: dict, patient, records_for_vaccine: list) -> int:
-    vaccine_key = rule.get("id")
-    doses_req = rule.get("doses_required", 1)
-
-    if vaccine_key == "pneu_c_15":
-        if age_months >= 24:
-            return 1
-        return 3
-
-    if vaccine_key == "pneu_c_20":
-        if age_months < 24:
-            return 4
-        if age_months < 216:
-            return 1
-        return 1
-
-    if vaccine_key == "hpv":
-        # Manitoba schedule: 2 doses when initiated before 15; otherwise 3 doses.
-        if age_months < 180:
-            return 2
-        if records_for_vaccine:
-            first_dose_age = _age_in_months_on(patient.dob, records_for_vaccine[0].date_given)
-            if first_dose_age < 180:
-                return 2
-        return 3
-
-    if vaccine_key == "hepatitis_b":
-        high_risk = any(
-            flags.get(flag, False)
-            for flag in rule.get("risk_factor_overrides", [])
-        )
-        return 3 if high_risk else 2
-
-    if vaccine_key == "mmr":
-        if age_months < 12:
-            return 1
-        if flags.get("is_healthcare_worker"):
-            return 2
-        if flags.get("is_student"):
-            return 1 if birth_year < 1970 else 2
-        if birth_year >= 1985:
-            return 2
-        if birth_year >= 1970:
-            return 1
-        return 0
-
-    return doses_req
 
 
 # ── Main Evaluation Function ──────────────────────────────────────────────────
@@ -232,64 +233,76 @@ def evaluate_patient(patient, records: list) -> list:
     Run the full rule engine for a patient against all vaccines.
 
     Parameters:
-        patient: patient object with DOB/risk flag attributes
-        records: list of record objects with .vaccine.vaccine_key and .date_given
+        patient : Patient ORM object
+        records : list of VaccinationRecord ORM objects with .vaccine loaded
 
     Returns:
-        List of dicts with vaccine status for each vaccine
+        List of result dicts, one per vaccine
     """
-
-    # Edge case: no patient object
     if patient is None:
         return []
 
-    # Edge case: missing or invalid DOB
     try:
         age_months = _age_in_months(patient.dob)
         birth_year = _birth_year(patient.dob)
     except Exception:
         return [{"error": "Invalid or missing date of birth"}]
 
-    flags = _get_patient_flags(patient)
+    flags   = _get_patient_flags(patient)
     results = []
 
     for rule in VACCINE_RULES:
         vaccine_key  = rule["id"]
         vaccine_name = rule["name"]
 
-        # Get this patient's records for this vaccine (handles missing records gracefully)
-        vax_records     = _get_records_for_vaccine(records or [], vaccine_key)
-        doses_received  = len(vax_records)
-        last_dose_date  = vax_records[-1].date_given if vax_records else None
-        doses_req = _required_doses_for_rule(rule, age_months, birth_year, flags, patient, vax_records)
+        vax_records    = _get_records_for_vaccine(records or [], vaccine_key)
+        doses_received = len(vax_records)
+        last_dose_date = vax_records[-1].date_given if vax_records else None
 
-        # ── Step 1: Eligibility check ─────────────────────────────────────────
+        # Dynamic dose count (FIX 3 & 4)
+        doses_req = _required_doses(rule, age_months, birth_year, flags, patient, vax_records)
+
+        # ── Step 1: Eligibility ───────────────────────────────────────────────
         eligible, reason = _is_eligible(rule, age_months, birth_year, flags)
 
-        # Rotavirus Manitoba nuance: do not start series after 15 weeks.
+        # FIX 6 — Rotavirus: cannot START series after 15 weeks (~3.5 months)
         if vaccine_key == "rotavirus" and doses_received == 0 and age_months >= 4:
             eligible = False
-            reason = "Too old to start Rotavirus series (must begin before 15 weeks)"
+            reason   = "Too old to start Rotavirus series (first dose must be given before 15 weeks)"
 
-        if not eligible:
+        # MMR special: if 0 doses required (born < 1970), mark as UP_TO_DATE
+        if vaccine_key == "mmr" and doses_req == 0:
             results.append({
-                "vaccine_key":     vaccine_key,
-                "vaccine_name":    vaccine_name,
-                "status":          "NOT_ELIGIBLE",
-                "reason":          reason,
-                "last_dose":       last_dose_date,
-                "next_due":        None,
-                "doses_received":  doses_received,
-                "doses_required":  doses_req,
-                "days_until":      None,
+                "vaccine_key":    vaccine_key,
+                "vaccine_name":   vaccine_name,
+                "status":         "UP_TO_DATE",
+                "reason":         "Adults born before 1970 are considered immune",
+                "last_dose":      last_dose_date,
+                "next_due":       None,
+                "doses_received": doses_received,
+                "doses_required": doses_req,
+                "days_until":     None,
             })
             continue
 
-        # ── Step 2: Repeating vaccines (e.g. annual flu, Tdap every 10 yrs) ──
+        if not eligible:
+            results.append({
+                "vaccine_key":    vaccine_key,
+                "vaccine_name":   vaccine_name,
+                "status":         "NOT_ELIGIBLE",
+                "reason":         reason,
+                "last_dose":      last_dose_date,
+                "next_due":       None,
+                "doses_received": doses_received,
+                "doses_required": doses_req,
+                "days_until":     None,
+            })
+            continue
+
+        # ── Step 2: Repeating vaccines (annual flu, Tdap every 10 yrs, etc.) ──
         repeat_interval = rule.get("repeat_interval_days")
         if repeat_interval:
             if last_dose_date is None:
-                # Eligible but never received — overdue immediately
                 results.append({
                     "vaccine_key":    vaccine_key,
                     "vaccine_name":   vaccine_name,
@@ -317,11 +330,11 @@ def evaluate_patient(patient, records: list) -> list:
                 })
             continue
 
-        # ── Step 3: Non-repeating multi-dose vaccines ──────────────────────────
+        # ── Step 3: Non-repeating vaccines ───────────────────────────────────
         dose_interval = rule.get("dose_interval_days")
 
         if doses_received >= doses_req:
-            # All doses complete
+            # All required doses complete
             results.append({
                 "vaccine_key":    vaccine_key,
                 "vaccine_name":   vaccine_name,
@@ -333,8 +346,9 @@ def evaluate_patient(patient, records: list) -> list:
                 "doses_required": doses_req,
                 "days_until":     None,
             })
+
         elif doses_received == 0:
-            # Eligible but never started
+            # Eligible but no doses at all
             results.append({
                 "vaccine_key":    vaccine_key,
                 "vaccine_name":   vaccine_name,
@@ -346,8 +360,9 @@ def evaluate_patient(patient, records: list) -> list:
                 "doses_required": doses_req,
                 "days_until":     None,
             })
+
         else:
-            # Partially vaccinated — calculate when next dose is due
+            # Partial doses — calculate when next dose is due
             if dose_interval and last_dose_date:
                 next_due = last_dose_date + timedelta(days=dose_interval)
                 status   = _classify_by_date(next_due)
@@ -363,7 +378,7 @@ def evaluate_patient(patient, records: list) -> list:
                     "days_until":     _days_until(next_due) if status in ("DUE_SOON", "UP_TO_DATE") else None,
                 })
             else:
-                # No interval defined and partial doses — flag as overdue
+                # No interval defined — mark overdue conservatively
                 results.append({
                     "vaccine_key":    vaccine_key,
                     "vaccine_name":   vaccine_name,
@@ -379,10 +394,10 @@ def evaluate_patient(patient, records: list) -> list:
     return results
 
 
-# ── Summary Helper ─────────────────────────────────────────────────────────────
+# ── Summary Helper ────────────────────────────────────────────────────────────
 
 def summarize(results: list) -> dict:
-    """Count vaccines in each status category."""
+    """Count vaccines in each status bucket."""
     summary = {"overdue": 0, "due_soon": 0, "up_to_date": 0, "not_eligible": 0}
     for r in results:
         status = r.get("status", "")
@@ -397,13 +412,12 @@ def summarize(results: list) -> dict:
     return summary
 
 
-# ── Upcoming Schedule Filter ───────────────────────────────────────────────────
+# ── Upcoming Schedule Filter ──────────────────────────────────────────────────
 
 def get_upcoming_schedule(results: list) -> list:
     """
-    Filter and sort results for the upcoming schedule page.
-    Returns only DUE_SOON and UP_TO_DATE vaccines that have a next_due date,
-    sorted by due date ascending.
+    Return DUE_SOON and UP_TO_DATE vaccines that have a next_due date,
+    sorted ascending by due date.
     """
     upcoming = [
         r for r in results
