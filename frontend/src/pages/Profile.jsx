@@ -518,7 +518,7 @@ export default function Profile() {
               </div>
               <div className="step-actions">
                 <button className="btn btn-primary" onClick={() => setStep(2)} disabled={!form.name || !form.dob}>
-                  Next: Risk Factors ->
+                  {'Next: Risk Factors ->'}
                 </button>
               </div>
             </div>
@@ -540,7 +540,7 @@ export default function Profile() {
               </div>
               <div className="step-actions">
                 <button className="btn btn-outline" onClick={() => setStep(1)}>Back</button>
-                <button className="btn btn-primary" onClick={() => setStep(3)}>Next: Vaccine History -></button>
+                <button className="btn btn-primary" onClick={() => setStep(3)}>{'Next: Vaccine History ->'}</button>
               </div>
             </div>
           )}

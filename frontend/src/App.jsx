@@ -12,6 +12,7 @@ import Landing from './pages/Landing'
 import Profile from './pages/Profile'
 import Dashboard from './pages/Dashboard'
 import Schedule from './pages/Schedule'
+import Encyclopedia from './pages/Encyclopedia'
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token')
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/profile"   element={<PrivateRoute><Profile /></PrivateRoute>} />
         <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
         <Route path="/schedule"  element={<PrivateRoute><Schedule /></PrivateRoute>} />
+        <Route path="/encyclopedia" element={<PrivateRoute><Encyclopedia /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   )

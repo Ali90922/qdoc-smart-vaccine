@@ -7,13 +7,10 @@
  *   8,611m
  * ========================================== */
 
-.header-shell {
+.navbar {
   position: sticky;
   top: 0;
   z-index: 120;
-}
-
-.navbar {
   display: flex;
   align-items: center;
   gap: 20px;
@@ -69,7 +66,36 @@
   background: #e8f2fb;
 }
 
-.btn-sm { padding: 8px 14px; font-size: 12px; }
+.qdoc-signout-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 128px;
+  height: 46px;
+  padding: 0 26px;
+  border: 0;
+  border-radius: 12px;
+  background: #1f5f96;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(16, 38, 56, 0.28);
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.qdoc-signout-btn:hover {
+  background: #245f91;
+  box-shadow: 0 8px 18px rgba(16, 38, 56, 0.32);
+  transform: translateY(-1px);
+}
+
+.qdoc-signout-btn:active {
+  transform: translateY(0);
+}
 
 @media (max-width: 700px) {
   .navbar {
@@ -81,5 +107,12 @@
   .navbar-links {
     order: 3;
     width: 100%;
+  }
+
+  .qdoc-signout-btn {
+    min-width: 112px;
+    height: 40px;
+    padding: 0 18px;
+    font-size: 11px;
   }
 }

@@ -23,7 +23,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className="header-shell">
+    <>
       <TopStrip />
       <nav className="navbar">
         <Link to="/dashboard" className="navbar-brand">
@@ -34,9 +34,10 @@ export default function Navbar() {
           <Link to="/dashboard" className={`nav-link ${active('/dashboard')}`}>Dashboard</Link>
           <Link to="/profile"   className={`nav-link ${active('/profile')}`}>Profile</Link>
           <Link to="/schedule"  className={`nav-link ${active('/schedule')}`}>Schedule</Link>
+          <Link to="/encyclopedia" className={`nav-link ${active('/encyclopedia')}`}>Encyclopedia</Link>
         </div>
-        <button className="btn btn-outline btn-sm" onClick={logout}>Sign Out</button>
+        <button className="qdoc-signout-btn" onClick={logout}>Sign Out</button>
       </nav>
-    </header>
+    </>
   )
 }
