@@ -12,17 +12,33 @@ import Navbar from '../components/Navbar'
 import { getSchedule } from '../api'
 import './Schedule.css'
 
+function parseDateLocal(d) {
+  if (!d) return null
+  const s = String(d)
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  const dt = new Date(s)
+  if (Number.isNaN(dt.getTime())) return null
+  return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate())
+}
+
 function fmtDate(d) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
+  const dt = parseDateLocal(d)
+  if (!dt) return '—'
+  return dt.toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
 function fmtMonth(d) {
-  return new Date(d).toLocaleDateString('en-CA', { month: 'short' }).toUpperCase()
+  const dt = parseDateLocal(d)
+  if (!dt) return '—'
+  return dt.toLocaleDateString('en-CA', { month: 'short' }).toUpperCase()
 }
 
 function fmtDay(d) {
-  return new Date(d).getDate()
+  const dt = parseDateLocal(d)
+  if (!dt) return '—'
+  return dt.getDate()
 }
 
 function coverageHint(daysUntil) {
@@ -108,7 +124,7 @@ export default function Schedule() {
                   <div className="timeline-date-box">
                     <div className="tl-month">{fmtMonth(v.due_date)}</div>
                     <div className="tl-day">{fmtDay(v.due_date)}</div>
-                    <div className="tl-year">{new Date(v.due_date).getFullYear()}</div>
+                    <div className="tl-year">{parseDateLocal(v.due_date)?.getFullYear() || '—'}</div>
                   </div>
                   <div className="timeline-content card">
                     <div className="tl-vname">{v.vaccine_name}</div>

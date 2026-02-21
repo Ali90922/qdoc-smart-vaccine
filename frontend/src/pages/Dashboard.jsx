@@ -46,7 +46,9 @@ function Badge({ status }) {
 
 function fmtDate(d) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-CA', { year:'numeric', month:'short', day:'numeric' })
+  const dt = parseDateLocal(d)
+  if (!dt) return '—'
+  return dt.toLocaleDateString('en-CA', { year:'numeric', month:'short', day:'numeric' })
 }
 
 function getNextDueDisplay(v) {

@@ -50,9 +50,21 @@ const RISK_FACTORS = [
   { key: 'has_hiv',              label: 'HIV Positive' },
 ]
 
+function parseDateLocal(d) {
+  if (!d) return null
+  const s = String(d)
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  const dt = new Date(s)
+  if (Number.isNaN(dt.getTime())) return null
+  return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate())
+}
+
 function fmtDate(d) {
   if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })
+  const dt = parseDateLocal(d)
+  if (!dt) return '—'
+  return dt.toLocaleDateString('en-CA', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 function inferDoseHistory(rows) {
@@ -65,7 +77,9 @@ function inferDoseHistory(rows) {
 
   const inferred = []
   for (const [vaccineKey, entries] of grouped.entries()) {
-    const ordered = [...entries].sort((a, b) => new Date(a.date_given) - new Date(b.date_given))
+    const ordered = [...entries].sort(
+      (a, b) => (parseDateLocal(a.date_given)?.getTime() || 0) - (parseDateLocal(b.date_given)?.getTime() || 0)
+    )
     ordered.forEach((entry, idx) => {
       inferred.push({
         vaccine_key: vaccineKey,
@@ -139,7 +153,7 @@ export default function Profile() {
   const sortedHistory = useMemo(() => {
     if (!existingProfile?.vaccination_history) return []
     return [...existingProfile.vaccination_history].sort(
-      (a, b) => new Date(b.date_given) - new Date(a.date_given)
+      (a, b) => (parseDateLocal(b.date_given)?.getTime() || 0) - (parseDateLocal(a.date_given)?.getTime() || 0)
     )
   }, [existingProfile])
 
